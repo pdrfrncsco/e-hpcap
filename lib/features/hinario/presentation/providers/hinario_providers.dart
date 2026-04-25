@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/local_storage/database_service.dart';
 import '../../data/repositories/hinario_repository.dart';
@@ -30,21 +31,34 @@ final searchQueryProvider = StateProvider<String>((ref) => '');
 
 // Busca temas
 final temasProvider = FutureProvider<List<Tema>>((ref) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
   final repository = ref.watch(hinarioRepositoryProvider);
-  return repository.getTemas();
+  return repository.getTemas(cancelToken: cancelToken);
 });
 
 // Busca Hinos baseado nos filtros (Secão e Tema)
 final hinosListProvider = FutureProvider<List<Hino>>((ref) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
   final repository = ref.watch(hinarioRepositoryProvider);
   final secao = ref.watch(secaoSelecionadaProvider);
   final temaSlug = ref.watch(temaSelecionadoProvider);
 
-  return repository.getHinos(secao: secao, temaSlug: temaSlug);
+  return repository.getHinos(
+    secao: secao, 
+    temaSlug: temaSlug,
+    cancelToken: cancelToken,
+  );
 });
 
 // Busca Hinos por termo de pesquisa
 final hinoSearchResultsProvider = FutureProvider<List<Hino>>((ref) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
   final repository = ref.watch(hinarioRepositoryProvider);
   final secao = ref.watch(secaoSelecionadaProvider);
   final query = ref.watch(searchQueryProvider);
@@ -53,11 +67,18 @@ final hinoSearchResultsProvider = FutureProvider<List<Hino>>((ref) async {
     return [];
   }
 
-  return repository.buscarHinos(query, secao: secao);
+  return repository.buscarHinos(
+    query, 
+    secao: secao,
+    cancelToken: cancelToken,
+  );
 });
 
 // Provider para o detalhe do hino (Family provider aceita um ID)
 final hinoDetalheProvider = FutureProvider.family<Hino, int>((ref, id) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
   final repository = ref.watch(hinarioRepositoryProvider);
-  return repository.getHinoDetalhe(id);
+  return repository.getHinoDetalhe(id, cancelToken: cancelToken);
 });

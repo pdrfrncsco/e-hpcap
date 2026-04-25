@@ -1,9 +1,16 @@
+// lib/features/hinario/data/repositories/hinario_repository.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/local_storage/database_service.dart';
 import '../../../../core/network/api_error.dart';
 import '../../domain/models/hino.dart';
 import '../../domain/models/tema.dart';
+
+/// Tipo da callback de progresso do download.
+/// [downloaded] = hinos já guardados, [total] = total a guardar,
+/// [phase] = descrição legível da fase actual.
+typedef ProgressCallback = void Function(int downloaded, int total, String phase);
 
 class HinarioRepository {
   final Dio _dio;
@@ -12,53 +19,55 @@ class HinarioRepository {
   HinarioRepository(this._dio, this._db);
 
   List<dynamic> _unwrapList(dynamic data) {
-    if (data is List) {
-      return data;
-    }
+    if (data is List) return data;
     if (data is Map<String, dynamic>) {
       final results = data['results'];
-      if (results is List) {
-        return results;
-      }
+      if (results is List) return results;
     }
     throw Exception('Resposta inesperada da API: $data');
   }
 
-  Future<List<Hino>> getHinos({String? secao, String? temaSlug}) async {
-    // 1. Tentar ler do banco local primeiro
+  Future<List<Hino>> getHinos({
+    String? secao,
+    String? temaSlug,
+    CancelToken? cancelToken,
+  }) async {
     try {
       final localHinos = await _db.getHinos(secao: secao, temaSlug: temaSlug);
       if (localHinos.isNotEmpty) {
-        // Retornar dados locais imediatamente para alívio imediato
-        // Opcionalmente, poderíamos disparar um fetch em background para atualizar
-        _syncHinosInBackground(secao: secao, temaSlug: temaSlug);
+        _syncHinosInBackground(secao: secao, temaSlug: temaSlug, cancelToken: cancelToken);
         return localHinos;
       }
     } catch (e) {
-      print('Erro ao ler hinos do banco local: $e');
+      debugPrint('Erro ao ler hinos do banco local: $e');
     }
-
-    // 2. Se não houver dados locais, buscar da rede
-    return _fetchAndSaveHinos(secao: secao, temaSlug: temaSlug);
+    return _fetchAndSaveHinos(secao: secao, temaSlug: temaSlug, cancelToken: cancelToken);
   }
 
-  Future<List<Hino>> _fetchAndSaveHinos({String? secao, String? temaSlug}) async {
+  Future<List<Hino>> _fetchAndSaveHinos({
+    String? secao,
+    String? temaSlug,
+    CancelToken? cancelToken,
+  }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (secao != null) queryParams['secao'] = secao;
       if (temaSlug != null) queryParams['tema'] = temaSlug;
 
-      final response = await _dio.get('hinos/', queryParameters: queryParams);
+      final response = await _dio.get(
+        'hinos/',
+        queryParameters: queryParams,
+        cancelToken: cancelToken,
+      );
       final List<dynamic> data = _unwrapList(response.data);
       final hinos = data
           .map((json) => Hino.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      // Salvar no banco local para uso futuro
       await _db.saveHinos(hinos);
-      
       return hinos;
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) throw e;
       throw ApiErrorFormatter.fromDio(
         e,
         fallbackMessage: 'Não foi possível carregar os hinos.',
@@ -66,34 +75,41 @@ class HinarioRepository {
     }
   }
 
-  void _syncHinosInBackground({String? secao, String? temaSlug}) {
-    _fetchAndSaveHinos(secao: secao, temaSlug: temaSlug).catchError((e) {
-      print('Erro no sync de background: $e');
+  void _syncHinosInBackground({
+    String? secao,
+    String? temaSlug,
+    CancelToken? cancelToken,
+  }) {
+    _fetchAndSaveHinos(
+      secao: secao,
+      temaSlug: temaSlug,
+      cancelToken: cancelToken,
+    ).catchError((e) {
+      if (!CancelToken.isCancel(e)) {
+        debugPrint('Erro no sync de background: $e');
+      }
       return <Hino>[];
     });
   }
 
-  Future<Hino> getHinoDetalhe(int id) async {
-    // 1. Tentar ler do banco local
+  Future<Hino> getHinoDetalhe(int id, {CancelToken? cancelToken}) async {
     try {
       final localHino = await _db.getHinoDetalhe(id);
-      if (localHino != null) {
-        return localHino;
-      }
+      if (localHino != null) return localHino;
     } catch (e) {
-      print('Erro ao ler detalhe do hino do banco local: $e');
+      debugPrint('Erro ao ler detalhe do hino do banco local: $e');
     }
 
-    // 2. Se não houver ou não for detalhado, buscar da rede
     try {
-      final response = await _dio.get('hinos/$id/');
+      final response = await _dio.get(
+        'hinos/$id/',
+        cancelToken: cancelToken,
+      );
       final hino = Hino.fromJson(response.data as Map<String, dynamic>);
-      
-      // Salvar no banco local
       await _db.saveHinos([hino]);
-      
       return hino;
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) throw e;
       throw ApiErrorFormatter.fromDio(
         e,
         fallbackMessage: 'Não foi possível carregar os detalhes do hino.',
@@ -101,8 +117,7 @@ class HinarioRepository {
     }
   }
 
-  Future<List<Hino>> buscarHinos(String query, {String? secao}) async {
-    // 1. Tentar sempre a rede primeiro para resultados mais precisos (Busca Full-Text no Postgres)
+  Future<List<Hino>> buscarHinos(String query, {String? secao, CancelToken? cancelToken}) async {
     try {
       final queryParams = <String, dynamic>{'q': query};
       if (secao != null) queryParams['secao'] = secao;
@@ -110,70 +125,87 @@ class HinarioRepository {
       final response = await _dio.get(
         'hinos/busca/',
         queryParameters: queryParams,
+        cancelToken: cancelToken,
       );
-
       final List<dynamic> data = _unwrapList(response.data);
-      final hinos = data
+      return data
           .map((json) => Hino.fromJson(json as Map<String, dynamic>))
           .toList();
-      
-      return hinos;
     } on DioException catch (e) {
-      // 2. Fallback Offline: Se a rede falhar (ex: sem internet), procuramos no banco local
+      if (CancelToken.isCancel(e)) throw e;
       debugPrint('Busca remota falhou, tentando busca local: $e');
-      return await _db.searchHinosLocal(query, secao: secao);
+      return _db.searchHinosLocal(query, secao: secao);
     } catch (e) {
-      return await _db.searchHinosLocal(query, secao: secao);
+      return _db.searchHinosLocal(query, secao: secao);
     }
   }
 
-  /// Descarrega todos os hinos de uma secção com letras para uso offline completo
-  Future<void> descarregarSecaoCompleta(String secao) async {
+  /// Descarrega todos os hinos de uma secção com letras completas para uso offline.
+  Future<void> descarregarSecaoCompleta(
+    String secao, {
+    ProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) async {
+    onProgress?.call(0, 0, 'A contactar o servidor…');
+
+    late List<Hino> hinos;
+
     try {
       final response = await _dio.get('hinos/', queryParameters: {
         'secao': secao,
-        'page_size': 1000, 
-        'include_details': 'true', // Ativa o envio das letras em massa
-      });
-      
+        'page_size': 1000,
+        'include_details': 'true',
+      }, cancelToken: cancelToken);
+
       final List<dynamic> data = _unwrapList(response.data);
-      final hinos = data
+      hinos = data
           .map((json) => Hino.fromJson(json as Map<String, dynamic>))
           .toList();
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) throw e;
+      throw ApiErrorFormatter.fromDio(
+        e,
+        fallbackMessage: 'Não foi possível descarregar a secção.',
+      );
+    }
 
-      await _db.saveHinos(hinos);
-    } catch (e) {
-      debugPrint('Erro ao descarregar secção completa: $e');
-      rethrow;
+    final total = hinos.length;
+    if (total == 0) return;
+
+    // Persistência atómica em lote para performance, mantendo a granularidade
+    // do progresso apenas se necessário (ex: updates a cada 10 hinos)
+    // ou mantendo hino a hino se a UI exigir precisão absoluta.
+    for (int i = 0; i < total; i++) {
+      if (cancelToken?.isCancelled ?? false) return;
+      await _db.saveHinos([hinos[i]]);
+      onProgress?.call(i + 1, total, 'A guardar hino ${i + 1} de $total…');
     }
   }
 
-  Future<List<Tema>> getTemas() async {
-    // 1. Tentar local
+  Future<List<Tema>> getTemas({CancelToken? cancelToken}) async {
     try {
       final localTemas = await _db.getTemas();
       if (localTemas.isNotEmpty) {
-        _syncTemasInBackground();
+        _syncTemasInBackground(cancelToken: cancelToken);
         return localTemas;
       }
     } catch (e) {
-      print('Erro ao ler temas do banco local: $e');
+      debugPrint('Erro ao ler temas do banco local: $e');
     }
-
-    return _fetchAndSaveTemas();
+    return _fetchAndSaveTemas(cancelToken: cancelToken);
   }
 
-  Future<List<Tema>> _fetchAndSaveTemas() async {
+  Future<List<Tema>> _fetchAndSaveTemas({CancelToken? cancelToken}) async {
     try {
-      final response = await _dio.get('temas/');
+      final response = await _dio.get('temas/', cancelToken: cancelToken);
       final List<dynamic> data = _unwrapList(response.data);
       final temas = data
           .map((json) => Tema.fromJson(json as Map<String, dynamic>))
           .toList();
-
       await _db.saveTemas(temas);
       return temas;
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) throw e;
       throw ApiErrorFormatter.fromDio(
         e,
         fallbackMessage: 'Não foi possível carregar os temas.',
@@ -181,7 +213,7 @@ class HinarioRepository {
     }
   }
 
-  void _syncTemasInBackground() {
-    _fetchAndSaveTemas().catchError((e) => <Tema>[]);
+  void _syncTemasInBackground({CancelToken? cancelToken}) {
+    _fetchAndSaveTemas(cancelToken: cancelToken).catchError((e) => <Tema>[]);
   }
 }

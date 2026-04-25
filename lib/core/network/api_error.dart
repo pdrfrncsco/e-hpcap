@@ -30,7 +30,7 @@ class ApiErrorFormatter {
         return const ApiError('A ligação expirou. Tente novamente.');
       case DioExceptionType.connectionError:
         return const ApiError(
-          'Sem ligação ao servidor. Verifique a rede e o endereço da API.',
+          'Sem ligação à internet. Verifique e tente novamente.',
         );
       case DioExceptionType.badCertificate:
         return const ApiError('Falha no certificado de segurança da ligação.');

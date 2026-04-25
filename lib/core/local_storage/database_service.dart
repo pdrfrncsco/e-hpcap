@@ -12,38 +12,54 @@ class DatabaseService {
 
   DatabaseService._internal() : _db = AppDatabase();
 
+  /// Guarda uma lista de hinos de forma atómica.
+  /// Para garantir performance e atomicidade, filtramos os hinos que precisam 
+  /// de ser atualizados e usamos o modo batch do Drift.
   Future<void> saveHinos(List<Hino> hinos) async {
-    // Para evitar apagar letras já descarregadas ao receber uma lista simples da API,
-    // verificamos hino a hino.
-    for (final hino in hinos) {
-      final existing = await (_db.select(_db.hinosTable)..where((t) => t.id.equals(hino.id))).getSingleOrNull();
-      
-      // Só substituímos se o novo for detalhado OU se o antigo não for detalhado
-      final deveSubstituir = existing == null || hino.estrofes != null || !existing.isDetalhado;
+    // 1. Obter os IDs e estado detalhado dos hinos existentes para decidir o que atualizar
+    final ids = hinos.map((h) => h.id).toList();
+    final existingRows = await (_db.select(_db.hinosTable)..where((t) => t.id.isIn(ids))).get();
+    
+    final Map<int, bool> existingIsDetalhado = {
+      for (var row in existingRows) row.id: row.isDetalhado
+    };
 
-      if (deveSubstituir) {
-        await _db.into(_db.hinosTable).insertOnConflictUpdate(
-          HinosTableCompanion.insert(
-            id: Value(hino.id),
-            numero: hino.numero,
-            titulo: hino.titulo,
-            secao: hino.secao,
-            temasJson: jsonEncode(hino.temas.map((t) => t.toJson()).toList()),
-            hinoJson: jsonEncode(hino.toJson()),
-            isDetalhado: Value(hino.estrofes != null),
-          ),
-        );
+    // 2. Usar batch para inserção atómica
+    await _db.batch((batch) {
+      for (final hino in hinos) {
+        final isLocalDetalhado = existingIsDetalhado[hino.id] ?? false;
+        final isNovoDetalhado = hino.estrofes != null && hino.estrofes!.isNotEmpty;
+
+        // Só substituímos se o novo for detalhado ou se o local não for
+        final deveSubstituir = !existingIsDetalhado.containsKey(hino.id) || isNovoDetalhado || !isLocalDetalhado;
+
+        if (deveSubstituir) {
+          batch.insert(
+            _db.hinosTable,
+            HinosTableCompanion.insert(
+              id: Value(hino.id),
+              numero: hino.numero,
+              titulo: hino.titulo,
+              secao: hino.secao,
+              temasJson: jsonEncode(hino.temas.map((t) => t.toJson()).toList()),
+              hinoJson: jsonEncode(hino.toJson()),
+              isDetalhado: Value(isNovoDetalhado),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
       }
-    }
+    });
   }
 
   Future<List<Hino>> searchHinosLocal(String query, {String? secao}) async {
+    final cleanQuery = query.toLowerCase().trim();
     final driftQuery = _db.select(_db.hinosTable);
     
     driftQuery.where((t) {
-      final match = t.titulo.contains(query) | 
-                    t.numero.cast<String>().contains(query) |
-                    t.hinoJson.contains(query);
+      final match = t.titulo.lower().contains(cleanQuery) | 
+                    t.numero.cast<String>().contains(cleanQuery) |
+                    t.hinoJson.lower().contains(cleanQuery);
       
       if (secao != null) {
         return match & t.secao.equals(secao);
@@ -51,12 +67,17 @@ class DatabaseService {
       return match;
     });
 
-    driftQuery.orderBy([(t) => OrderingTerm(expression: t.numero)]);
-    final rows = await driftQuery.get();
+    driftQuery.orderBy([
+      (t) => OrderingTerm(
+        // No Drift usamos .like para simular o startsWith no SQL
+        expression: t.titulo.lower().like('$cleanQuery%'), 
+        mode: OrderingMode.desc
+      ),
+      (t) => OrderingTerm(expression: t.numero),
+    ]);
 
-    return rows.map((row) {
-      return Hino.fromJson(jsonDecode(row.hinoJson) as Map<String, dynamic>);
-    }).toList();
+    final rows = await driftQuery.get();
+    return rows.map((row) => _mapRowToHino(row)).toList();
   }
 
   Future<List<Hino>> getHinos({String? secao, String? temaSlug}) async {
@@ -73,10 +94,7 @@ class DatabaseService {
     query.orderBy([(t) => OrderingTerm(expression: t.numero)]);
 
     final rows = await query.get();
-
-    return rows.map((row) {
-      return Hino.fromJson(jsonDecode(row.hinoJson) as Map<String, dynamic>);
-    }).toList();
+    return rows.map((row) => _mapRowToHino(row)).toList();
   }
 
   Future<Hino?> getHinoDetalhe(int id) async {
@@ -85,11 +103,11 @@ class DatabaseService {
       ..where((t) => t.isDetalhado.equals(true));
 
     final row = await query.getSingleOrNull();
+    return row != null ? _mapRowToHino(row) : null;
+  }
 
-    if (row != null) {
-      return Hino.fromJson(jsonDecode(row.hinoJson) as Map<String, dynamic>);
-    }
-    return null;
+  Hino _mapRowToHino(HinosTableData row) {
+    return Hino.fromJson(jsonDecode(row.hinoJson) as Map<String, dynamic>);
   }
 
   Future<void> saveTemas(List<Tema> temas) async {
