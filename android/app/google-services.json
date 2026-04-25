@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "449930785734",
+    "project_id": "eclezzia-hpc",
+    "storage_bucket": "eclezzia-hpc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:449930785734:android:3f699ae41d010a485d38c7",
+        "android_client_info": {
+          "package_name": "com.ndeascloud.eclezzia"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "449930785734-60jjddflotlg2kd5er5u217smcihbbvd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "449930785734-60jjddflotlg2kd5er5u217smcihbbvd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
