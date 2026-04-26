@@ -13,10 +13,7 @@ class DatabaseService {
   DatabaseService._internal() : _db = AppDatabase();
 
   /// Guarda uma lista de hinos de forma atómica.
-  /// Para garantir performance e atomicidade, filtramos os hinos que precisam 
-  /// de ser atualizados e usamos o modo batch do Drift.
   Future<void> saveHinos(List<Hino> hinos) async {
-    // 1. Obter os IDs e estado detalhado dos hinos existentes para decidir o que atualizar
     final ids = hinos.map((h) => h.id).toList();
     final existingRows = await (_db.select(_db.hinosTable)..where((t) => t.id.isIn(ids))).get();
     
@@ -24,13 +21,11 @@ class DatabaseService {
       for (var row in existingRows) row.id: row.isDetalhado
     };
 
-    // 2. Usar batch para inserção atómica
     await _db.batch((batch) {
       for (final hino in hinos) {
         final isLocalDetalhado = existingIsDetalhado[hino.id] ?? false;
         final isNovoDetalhado = hino.estrofes != null && hino.estrofes!.isNotEmpty;
 
-        // Só substituímos se o novo for detalhado ou se o local não for
         final deveSubstituir = !existingIsDetalhado.containsKey(hino.id) || isNovoDetalhado || !isLocalDetalhado;
 
         if (deveSubstituir) {
@@ -52,16 +47,20 @@ class DatabaseService {
     });
   }
 
+  /// Pesquisa hinos localmente com lógica mais robusta.
   Future<List<Hino>> searchHinosLocal(String query, {String? secao}) async {
+    if (query.isEmpty) return [];
+    
     final cleanQuery = query.toLowerCase().trim();
     final driftQuery = _db.select(_db.hinosTable);
     
     driftQuery.where((t) {
-      final match = t.titulo.lower().contains(cleanQuery) | 
-                    t.numero.cast<String>().contains(cleanQuery) |
-                    t.hinoJson.lower().contains(cleanQuery);
+      // Usamos LIKE explicitly para maior compatibilidade e flexibilidade
+      final match = t.titulo.lower().like('%$cleanQuery%') | 
+                    t.numero.cast<String>().like('%$cleanQuery%') |
+                    t.hinoJson.lower().like('%$cleanQuery%');
       
-      if (secao != null) {
+      if (secao != null && secao.isNotEmpty) {
         return match & t.secao.equals(secao);
       }
       return match;
@@ -69,7 +68,6 @@ class DatabaseService {
 
     driftQuery.orderBy([
       (t) => OrderingTerm(
-        // No Drift usamos .like para simular o startsWith no SQL
         expression: t.titulo.lower().like('$cleanQuery%'), 
         mode: OrderingMode.desc
       ),
@@ -83,11 +81,11 @@ class DatabaseService {
   Future<List<Hino>> getHinos({String? secao, String? temaSlug}) async {
     final query = _db.select(_db.hinosTable);
     
-    if (secao != null) {
+    if (secao != null && secao.isNotEmpty) {
       query.where((t) => t.secao.equals(secao));
     }
     
-    if (temaSlug != null) {
+    if (temaSlug != null && temaSlug.isNotEmpty) {
       query.where((t) => t.temasJson.like('%"slug":"$temaSlug"%'));
     }
 

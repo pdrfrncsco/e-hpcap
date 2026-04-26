@@ -8,8 +8,6 @@ import '../../domain/models/hino.dart';
 import '../../domain/models/tema.dart';
 
 /// Tipo da callback de progresso do download.
-/// [downloaded] = hinos já guardados, [total] = total a guardar,
-/// [phase] = descrição legível da fase actual.
 typedef ProgressCallback = void Function(int downloaded, int total, String phase);
 
 class HinarioRepository {
@@ -51,8 +49,8 @@ class HinarioRepository {
   }) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (secao != null) queryParams['secao'] = secao;
-      if (temaSlug != null) queryParams['tema'] = temaSlug;
+      if (secao != null && secao.isNotEmpty) queryParams['secao'] = secao;
+      if (temaSlug != null && temaSlug.isNotEmpty) queryParams['tema'] = temaSlug;
 
       final response = await _dio.get(
         'hinos/',
@@ -117,30 +115,43 @@ class HinarioRepository {
     }
   }
 
+  /// Busca hinos com fallback automático para local se o servidor falhar ou retornar vazio.
   Future<List<Hino>> buscarHinos(String query, {String? secao, CancelToken? cancelToken}) async {
+    if (query.isEmpty) return [];
+
+    List<Hino> results = [];
+
+    // 1. Tentar busca remota primeiro
     try {
-      final queryParams = <String, dynamic>{'q': query};
-      if (secao != null) queryParams['secao'] = secao;
+      final queryParams = <String, dynamic>{'q': query, 'search': query};
+      if (secao != null && secao.isNotEmpty) queryParams['secao'] = secao;
 
       final response = await _dio.get(
         'hinos/busca/',
         queryParameters: queryParams,
         cancelToken: cancelToken,
       );
+      
       final List<dynamic> data = _unwrapList(response.data);
-      return data
-          .map((json) => Hino.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on DioException catch (e) {
-      if (CancelToken.isCancel(e)) throw e;
-      debugPrint('Busca remota falhou, tentando busca local: $e');
-      return _db.searchHinosLocal(query, secao: secao);
+      results = data.map((json) => Hino.fromJson(json as Map<String, dynamic>)).toList();
+      
+      if (results.isNotEmpty) return results;
     } catch (e) {
-      return _db.searchHinosLocal(query, secao: secao);
+      if (CancelToken.isCancel(e as DioException)) throw e;
+      debugPrint('Busca remota falhou ou retornou vazio, tentando local: $e');
     }
+
+    // 2. Se remota falhar ou for vazia, buscar localmente
+    results = await _db.searchHinosLocal(query, secao: secao);
+    
+    // 3. Se ainda estiver vazio e estávamos filtrando por seção, tentar busca GLOBAL
+    if (results.isEmpty && secao != null) {
+      results = await _db.searchHinosLocal(query, secao: null);
+    }
+
+    return results;
   }
 
-  /// Descarrega todos os hinos de uma secção com letras completas para uso offline.
   Future<void> descarregarSecaoCompleta(
     String secao, {
     ProgressCallback? onProgress,
@@ -172,9 +183,6 @@ class HinarioRepository {
     final total = hinos.length;
     if (total == 0) return;
 
-    // Persistência atómica em lote para performance, mantendo a granularidade
-    // do progresso apenas se necessário (ex: updates a cada 10 hinos)
-    // ou mantendo hino a hino se a UI exigir precisão absoluta.
     for (int i = 0; i < total; i++) {
       if (cancelToken?.isCancelled ?? false) return;
       await _db.saveHinos([hinos[i]]);
