@@ -54,6 +54,21 @@ final hinosListProvider = FutureProvider<List<Hino>>((ref) async {
   );
 });
 
+// Provider parametrizado para facilitar o swipe entre secções
+final hinosPorSecaoProvider = FutureProvider.family<List<Hino>, String>((ref, secao) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
+  final repository = ref.watch(hinarioRepositoryProvider);
+  final temaSlug = ref.watch(temaSelecionadoProvider);
+
+  return repository.getHinos(
+    secao: secao, 
+    temaSlug: temaSlug,
+    cancelToken: cancelToken,
+  );
+});
+
 // Busca Hinos por termo de pesquisa
 final hinoSearchResultsProvider = FutureProvider<List<Hino>>((ref) async {
   final cancelToken = CancelToken();

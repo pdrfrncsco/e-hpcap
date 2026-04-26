@@ -16,7 +16,6 @@ class HinoDetailScreen extends ConsumerStatefulWidget {
 
 class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
   late PageController _pageController;
-  List<Hino> _hinosLista = [];
 
   @override
   void initState() {
@@ -41,17 +40,13 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
   Widget build(BuildContext context) {
     final hinosAsyncValue = ref.watch(hinosListProvider);
     final theme = Theme.of(context);
-    final prefs = ref.watch(readingPreferencesProvider);
 
     return hinosAsyncValue.when(
       data: (hinos) {
-        _hinosLista = hinos;
-        // Encontrar o índice inicial baseado no hinoId
         final initialIndex = hinos.indexWhere((h) => h.id == widget.hinoId);
         
-        // Se não encontrar na lista atual (ex: link direto), mostra apenas um
         if (initialIndex == -1) {
-          return _buildSingleHinoScaffold(widget.hinoId);
+          return _buildSingleHinoLoader(widget.hinoId);
         }
 
         return Scaffold(
@@ -67,7 +62,9 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
             controller: PageController(initialPage: initialIndex),
             itemCount: hinos.length,
             itemBuilder: (context, index) {
-              return _HinoContent(hino: hinos[index], prefs: prefs);
+              // Em vez de passar o hino da lista, passamos o ID para que 
+              // o HinoPageItem carregue os detalhes completos (estrofes).
+              return _HinoPageItem(hinoId: hinos[index].id);
             },
           ),
         );
@@ -76,14 +73,11 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
         appBar: AppBar(),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, __) => _buildSingleHinoScaffold(widget.hinoId),
+      error: (e, __) => _buildSingleHinoLoader(widget.hinoId),
     );
   }
 
-  Widget _buildSingleHinoScaffold(int id) {
-    final hinoAsyncValue = ref.watch(hinoDetalheProvider(id));
-    final prefs = ref.watch(readingPreferencesProvider);
-
+  Widget _buildSingleHinoLoader(int id) {
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -93,10 +87,49 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
           ),
         ],
       ),
-      body: hinoAsyncValue.when(
-        data: (hino) => _HinoContent(hino: hino, prefs: prefs),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, __) => Center(child: Text('Erro: $e')),
+      body: _HinoPageItem(hinoId: id),
+    );
+  }
+}
+
+/// Widget que carrega e exibe um hino individual, garantindo que as estrofes
+/// são procuradas no repositório (DB ou API).
+class _HinoPageItem extends ConsumerWidget {
+  final int hinoId;
+
+  const _HinoPageItem({required this.hinoId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Aqui está a chave: watch(hinoDetalheProvider) força o fetch dos detalhes
+    // se o hino da lista não os tiver.
+    final hinoAsync = ref.watch(hinoDetalheProvider(hinoId));
+    final prefs = ref.watch(readingPreferencesProvider);
+
+    return hinoAsync.when(
+      data: (hino) => _HinoContent(hino: hino, prefs: prefs),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, __) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Não foi possível carregar a letra deste hino.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Theme.of(context).colorScheme.outline),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(hinoDetalheProvider(hinoId)),
+                child: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -113,7 +146,6 @@ class _HinoContent extends StatelessWidget {
     final theme = Theme.of(context);
     final estrofes = hino.estrofes ?? [];
     
-    // Base de tamanhos de fonte escaláveis
     final baseTitleSize = 24.0 * prefs.fontSizeMultiplier;
     final baseBodySize = 18.0 * prefs.fontSizeMultiplier;
     final baseLabelSize = 13.0 * prefs.fontSizeMultiplier;
@@ -123,7 +155,6 @@ class _HinoContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho do Hino
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -188,7 +219,7 @@ class _HinoContent extends StatelessWidget {
                   children: [
                     Icon(Icons.notes_rounded, size: 48, color: theme.colorScheme.outline),
                     const SizedBox(height: 16),
-                    const Text('Letra não disponível offline.'),
+                    const Text('Letra não disponível para leitura.'),
                   ],
                 ),
               ),

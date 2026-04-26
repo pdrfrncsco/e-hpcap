@@ -16,10 +16,34 @@ const _nomesSecao = {
   'kik': 'Kikongo',
 };
 
-class HinarioScreen extends ConsumerWidget {
+final _secoesOrdem = ['pt', 'kim', 'umb', 'kik'];
+
+class HinarioScreen extends ConsumerStatefulWidget {
   const HinarioScreen({super.key});
 
-  void _iniciarDownload(BuildContext context, WidgetRef ref, String secao) {
+  @override
+  ConsumerState<HinarioScreen> createState() => _HinarioScreenState();
+}
+
+class _HinarioScreenState extends ConsumerState<HinarioScreen> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar o controller com a página correta baseada no estado atual
+    final secaoInicial = ref.read(secaoSelecionadaProvider);
+    final indexInicial = _secoesOrdem.indexOf(secaoInicial);
+    _pageController = PageController(initialPage: indexInicial >= 0 ? indexInicial : 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _iniciarDownload(BuildContext context, String secao) {
     final nomeSecao = _nomesSecao[secao] ?? secao.toUpperCase();
 
     showDialog(
@@ -41,7 +65,7 @@ class HinarioScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.pop(dialogContext);
               ref.read(downloadNotifierProvider.notifier).descarregarSecao(secao);
-              _mostrarFolhaProgresso(context, ref);
+              _mostrarFolhaProgresso(context);
             },
           ),
         ],
@@ -49,7 +73,7 @@ class HinarioScreen extends ConsumerWidget {
     );
   }
 
-  void _mostrarFolhaProgresso(BuildContext context, WidgetRef ref) {
+  void _mostrarFolhaProgresso(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isDismissible: false,
@@ -61,7 +85,7 @@ class HinarioScreen extends ConsumerWidget {
         onComplete: (int total, String secao) {
           if (context.mounted) Navigator.pop(sheetContext);
           ref.read(downloadNotifierProvider.notifier).reset();
-          ref.invalidate(hinosListProvider);
+          ref.invalidate(hinosPorSecaoProvider(secao));
 
           final nomeSecao = _nomesSecao[secao] ?? secao.toUpperCase();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -86,13 +110,23 @@ class HinarioScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hinosAsyncValue = ref.watch(hinosListProvider);
+  Widget build(BuildContext context) {
     final secaoAtual = ref.watch(secaoSelecionadaProvider);
     final connectivityAsync = ref.watch(connectivityStatusProvider);
     final theme = Theme.of(context);
-
     final isOffline = connectivityAsync.value == ConnectivityStatus.offline;
+
+    // Escutar mudanças no provider para animar o PageView (se vier de um clique no Chip)
+    ref.listen<String>(secaoSelecionadaProvider, (previous, next) {
+      final targetPage = _secoesOrdem.indexOf(next);
+      if (targetPage >= 0 && _pageController.hasClients && _pageController.page?.round() != targetPage) {
+        _pageController.animateToPage(
+          targetPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -124,7 +158,7 @@ class HinarioScreen extends ConsumerWidget {
                       behavior: SnackBarBehavior.floating,
                     )
                   )
-                : () => _iniciarDownload(context, ref, secaoAtual),
+                : () => _iniciarDownload(context, secaoAtual),
           ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
@@ -155,80 +189,104 @@ class HinarioScreen extends ConsumerWidget {
             ),
           const FiltrosHinario(),
           Expanded(
-            child: hinosAsyncValue.when(
-              data: (hinos) {
-                if (hinos.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.library_music_outlined,
-                            size: 64,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Nenhum hino encontrado',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(hinosListProvider),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: hinos.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final hino = hinos[index];
-                      // Lógica de disponibilidade
-                      final isDownloaded = hino.estrofes != null && hino.estrofes!.isNotEmpty;
-
-                      return HinoCard(
-                        hino: hino,
-                        onTap: () {
-                          if (!isDownloaded && isOffline) {
-                            // BLOQUEIO: Se não está baixado e está offline, não entra
-                            _mostrarAvisoOffline(context, hino.titulo);
-                          } else {
-                            // Se está baixado OU está online, pode navegar
-                            context.go('/hinario/${hino.id}');
-                          }
-                        },
-                      );
-                    },
-                  ),
-                );
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _secoesOrdem.length,
+              onPageChanged: (index) {
+                // Atualizar o provider quando o utilizador desliza
+                ref.read(secaoSelecionadaProvider.notifier).state = _secoesOrdem[index];
               },
-              loading: () => Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
-              error: (error, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error.withValues(alpha: 0.7)),
-                      const SizedBox(height: 20),
-                      Text('Não foi possível carregar', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 8),
-                      Text(error.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                      const SizedBox(height: 24),
-                      ElevatedButton(onPressed: () => ref.invalidate(hinosListProvider), child: const Text('Tentar Novamente')),
-                    ],
-                  ),
-                ),
-              ),
+              itemBuilder: (context, index) {
+                final secao = _secoesOrdem[index];
+                return _ListaHinosSecao(secao: secao, isOffline: isOffline);
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Widget interno para gerir a lista de cada secção de forma independente
+class _ListaHinosSecao extends ConsumerWidget {
+  final String secao;
+  final bool isOffline;
+
+  const _ListaHinosSecao({required this.secao, required this.isOffline});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hinosAsync = ref.watch(hinosPorSecaoProvider(secao));
+    final theme = Theme.of(context);
+
+    return hinosAsync.when(
+      data: (hinos) {
+        if (hinos.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.library_music_outlined,
+                    size: 64,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Nenhum hino encontrado',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(hinosPorSecaoProvider(secao)),
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: hinos.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final hino = hinos[index];
+              final isDownloaded = hino.estrofes != null && hino.estrofes!.isNotEmpty;
+
+              return HinoCard(
+                hino: hino,
+                onTap: () {
+                  if (!isDownloaded && isOffline) {
+                    _mostrarAvisoOffline(context, hino.titulo);
+                  } else {
+                    context.go('/hinario/${hino.id}');
+                  }
+                },
+              );
+            },
+          ),
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
+      error: (error, stack) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error.withValues(alpha: 0.7)),
+              const SizedBox(height: 20),
+              Text('Não foi possível carregar', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Text(error.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 24),
+              ElevatedButton(onPressed: () => ref.invalidate(hinosPorSecaoProvider(secao)), child: const Text('Tentar Novamente')),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -253,11 +311,7 @@ class HinarioScreen extends ConsumerWidget {
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: Colors.white,
-          onPressed: () {},
-        ),
+        action: SnackBarAction(label: 'OK', textColor: Colors.white, onPressed: () {}),
       ),
     );
   }
