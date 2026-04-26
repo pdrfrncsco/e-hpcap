@@ -9,7 +9,6 @@ import '../../../../core/network/connectivity_provider.dart';
 import '../widgets/hino_card.dart';
 import '../widgets/filtros_hinario.dart';
 
-// Mapa de nomes legíveis para cada código de secção.
 const _nomesSecao = {
   'pt': 'Português',
   'kim': 'Kimbundu',
@@ -20,9 +19,6 @@ const _nomesSecao = {
 class HinarioScreen extends ConsumerWidget {
   const HinarioScreen({super.key});
 
-  /// Mostra o diálogo de confirmação e, em caso afirmativo, abre a folha de
-  /// progresso. Separar confirmação de progresso permite ao utilizador cancelar
-  /// antes de comprometer dados de rede.
   void _iniciarDownload(BuildContext context, WidgetRef ref, String secao) {
     final nomeSecao = _nomesSecao[secao] ?? secao.toUpperCase();
 
@@ -44,8 +40,6 @@ class HinarioScreen extends ConsumerWidget {
             label: const Text('Descarregar'),
             onPressed: () {
               Navigator.pop(dialogContext);
-              // Iniciar o download antes de abrir a folha, para que o
-              // estado já esteja a ser actualizado quando o widget aparecer.
               ref.read(downloadNotifierProvider.notifier).descarregarSecao(secao);
               _mostrarFolhaProgresso(context, ref);
             },
@@ -55,11 +49,10 @@ class HinarioScreen extends ConsumerWidget {
     );
   }
 
-  /// Modal bottom sheet que observa o [DownloadState] e actualiza em tempo real.
   void _mostrarFolhaProgresso(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      isDismissible: false,  // impede fecho acidental durante o download
+      isDismissible: false,
       enableDrag: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -70,19 +63,15 @@ class HinarioScreen extends ConsumerWidget {
           ref.read(downloadNotifierProvider.notifier).reset();
           ref.invalidate(hinosListProvider);
 
-          // Mostrar confirmação com contagem real após fechar a folha.
           final nomeSecao = _nomesSecao[secao] ?? secao.toUpperCase();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded,
-                      color: Colors.white, size: 20),
+                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      '$total hinos de "$nomeSecao" guardados offline com sucesso.',
-                    ),
+                    child: Text('$total hinos de "$nomeSecao" guardados offline com sucesso.'),
                   ),
                 ],
               ),
@@ -103,7 +92,6 @@ class HinarioScreen extends ConsumerWidget {
     final connectivityAsync = ref.watch(connectivityStatusProvider);
     final theme = Theme.of(context);
 
-    // Determinar se estamos explicitamente offline
     final isOffline = connectivityAsync.value == ConnectivityStatus.offline;
 
     return Scaffold(
@@ -126,14 +114,15 @@ class HinarioScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Guardar para uso offline',
             icon: Icon(
-              isOffline 
-                  ? Icons.cloud_off_rounded 
-                  : Icons.download_for_offline_rounded,
+              isOffline ? Icons.cloud_off_rounded : Icons.download_for_offline_rounded,
               color: isOffline ? theme.colorScheme.error : null,
             ),
             onPressed: isOffline 
                 ? () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Verifica a tua ligação para descarregar hinos.'))
+                    const SnackBar(
+                      content: Text('Liga-te à internet para descarregar o hinário completo.'),
+                      behavior: SnackBarBehavior.floating,
+                    )
                   )
                 : () => _iniciarDownload(context, ref, secaoAtual),
           ),
@@ -145,7 +134,6 @@ class HinarioScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Banner de aviso offline
           if (isOffline)
             Container(
               width: double.infinity,
@@ -179,8 +167,7 @@ class HinarioScreen extends ConsumerWidget {
                           Icon(
                             Icons.library_music_outlined,
                             size: 64,
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -202,50 +189,39 @@ class HinarioScreen extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final hino = hinos[index];
+                      // Lógica de disponibilidade
+                      final isDownloaded = hino.estrofes != null && hino.estrofes!.isNotEmpty;
+
                       return HinoCard(
                         hino: hino,
-                        onTap: () => context.go('/hinario/${hino.id}'),
+                        onTap: () {
+                          if (!isDownloaded && isOffline) {
+                            // BLOQUEIO: Se não está baixado e está offline, não entra
+                            _mostrarAvisoOffline(context, hino.titulo);
+                          } else {
+                            // Se está baixado OU está online, pode navegar
+                            context.go('/hinario/${hino.id}');
+                          }
+                        },
                       );
                     },
                   ),
                 );
               },
-              loading: () => Center(
-                child: CircularProgressIndicator(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
+              loading: () => Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
               error: (error, stack) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 56,
-                        color: theme.colorScheme.error.withValues(alpha: 0.7),
-                      ),
+                      Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error.withValues(alpha: 0.7)),
                       const SizedBox(height: 20),
-                      Text(
-                        'Não foi possível carregar',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      Text('Não foi possível carregar', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
-                      Text(
-                        error.toString(),
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      Text(error.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                       const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(hinosListProvider),
-                        child: const Text('Tentar Novamente'),
-                      ),
+                      ElevatedButton(onPressed: () => ref.invalidate(hinosListProvider), child: const Text('Tentar Novamente')),
                     ],
                   ),
                 ),
@@ -256,10 +232,37 @@ class HinarioScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _mostrarAvisoOffline(BuildContext context, String titulo) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.cloud_off_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Letra de "$titulo" não disponível offline. Liga-te para ler.',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade800,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
 }
 
-/// Conteúdo da folha de progresso. Observa o [downloadNotifierProvider] e
-/// notifica os callbacks do pai quando o estado muda para completo ou erro.
 class _DownloadProgressSheet extends ConsumerWidget {
   final void Function(int total, String secao) onComplete;
 
@@ -284,12 +287,10 @@ class _DownloadProgressSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Indicador visual de fase
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 44, height: 44,
                 decoration: BoxDecoration(
                   color: (downloadState.hasError ? theme.colorScheme.errorContainer : theme.colorScheme.primaryContainer).withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(14),
@@ -306,15 +307,12 @@ class _DownloadProgressSheet extends ConsumerWidget {
                   children: [
                     Text(
                       downloadState.hasError ? 'Erro no download' : (downloadState.isComplete ? 'Download concluído!' : 'A descarregar "$nomeSecao"'),
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     if (downloadState.total > 0 && !downloadState.hasError)
                       Text(
                         '${downloadState.downloaded} de ${downloadState.total} hinos',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                   ],
                 ),
@@ -330,34 +328,21 @@ class _DownloadProgressSheet extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-
           if (!downloadState.hasError) ...[
-            // Barra de progresso principal
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: downloadState.total > 0 ? progress : null,
                 minHeight: 8,
-                backgroundColor:
-                    theme.colorScheme.primary.withValues(alpha: 0.12),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
               ),
             ),
             const SizedBox(height: 12),
-
-            // Descrição da fase actual
-            Text(
-              downloadState.phase,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            Text(downloadState.phase, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ] else ...[
-            // Mensagem de erro e retry
             Text(
               downloadState.error ?? 'Ocorreu um erro inesperado.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -369,10 +354,7 @@ class _DownloadProgressSheet extends ConsumerWidget {
               ),
             ),
           ],
-
           const SizedBox(height: 16),
-
-          // Botão de Cancelar
           if (downloadState.isDownloading)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -384,32 +366,22 @@ class _DownloadProgressSheet extends ConsumerWidget {
                 ),
               ],
             ),
-
           if (downloadState.isDownloading) ...[
             const SizedBox(height: 8),
-            // Nota informativa (só visível durante o download)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  Icon(Icons.info_outline_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Mantém a aplicação aberta enquanto o download decorre.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.4,
-                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.4),
                     ),
                   ),
                 ],

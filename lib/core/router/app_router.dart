@@ -11,6 +11,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/igrejas/presentation/screens/edit_my_igreja_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/verify_email_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,18 +25,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/hinario',
     refreshListenable: null,
     redirect: (context, state) {
+      final user = authState.value;
+      final isAuthenticated = user != null;
+      final isEmailVerified = user?.emailVerified ?? false;
+      
       final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-      final isAuthenticated = authState.value != null;
+      final isVerifyingEmail = state.matchedLocation == '/verify-email';
 
-      // Se não autenticado e tenta aceder ao perfil
+      // 1. Se autenticado mas e-mail NÃO verificado -> Forçar ecrã de verificação
+      if (isAuthenticated && !isEmailVerified && !isVerifyingEmail) {
+        return '/verify-email';
+      }
+
+      // 2. Se autenticado e e-mail verificado -> Não permitir voltar ao ecrã de verificação
+      if (isAuthenticated && isEmailVerified && isVerifyingEmail) {
+        return '/hinario';
+      }
+
+      // 3. Se não autenticado e tenta aceder ao perfil ou áreas privadas
       if (!isAuthenticated && !isLoggingIn) {
-        if (state.matchedLocation == '/profile' || state.matchedLocation == '/igrejas/minha-igreja') {
+        if (state.matchedLocation == '/profile' || 
+            state.matchedLocation == '/igrejas/minha-igreja' ||
+            state.matchedLocation == '/verify-email') {
           return '/login';
         }
       }
 
-      // Se autenticado e tenta ir para login/register
-      if (isAuthenticated && isLoggingIn) {
+      // 4. Se autenticado e verificado, tenta ir para login/register
+      if (isAuthenticated && isEmailVerified && isLoggingIn) {
         return '/hinario';
       }
 
@@ -51,6 +68,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/register',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const VerifyEmailScreen(),
       ),
       GoRoute(
         path: '/igrejas/minha-igreja',

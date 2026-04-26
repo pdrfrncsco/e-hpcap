@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../hinario/presentation/providers/hinario_providers.dart'; // Onde está o apiClientProvider
+import '../../../hinario/presentation/providers/hinario_providers.dart';
 import '../../domain/models/auth_user.dart';
 
 part 'auth_provider.g.dart';
@@ -23,17 +23,36 @@ class Auth extends _$Auth {
   }
 
   Future<void> signUpWithEmail(String email, String password) async {
-    await _firebaseAuth.createUserWithEmailAndPassword(
+    final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
+    
+    // Enviar e-mail de verificação imediatamente após o registo
+    await userCredential.user?.sendEmailVerification();
+  }
+
+  /// Força a atualização do estado do utilizador (ex: após verificar o e-mail)
+  Future<void> reloadUser() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      await user.reload();
+      // O stream authStateChanges() nem sempre emite após o reload,
+      // por isso poderíamos forçar um estado manual aqui se necessário.
+    }
+  }
+
+  Future<void> resendVerificationEmail() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
   }
 
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
   }
 
-  /// Obtém o token atual do Firebase para enviar ao backend
   Future<String?> getIdToken() async {
     final user = _firebaseAuth.currentUser;
     if (user == null) return null;
@@ -41,20 +60,18 @@ class Auth extends _$Auth {
   }
 }
 
-/// Provider para os dados do utilizador vindos da nossa API (Django)
 @Riverpod(keepAlive: true)
 Future<AuthUser?> currentUser(Ref ref) async {
   final authState = ref.watch(authProvider);
   
   return authState.when(
     data: (firebaseUser) async {
-      if (firebaseUser == null) return null;
+      // Se não houver user ou se o e-mail não estiver verificado, não carregamos dados da API
+      if (firebaseUser == null || !firebaseUser.emailVerified) return null;
       
       final dio = ref.read(apiClientProvider).client;
       try {
-        final response = await dio.get('/users/me/', queryParameters: {
-          't': DateTime.now().millisecondsSinceEpoch,
-        });
+        final response = await dio.get('/users/me/');
         return AuthUser.fromJson(response.data);
       } catch (e) {
         return null;

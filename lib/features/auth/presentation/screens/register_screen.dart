@@ -80,7 +80,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     
     return AuthLayout(
       title: 'Criar Conta',
-      subtitle: 'Junta-te à comunidade HPC+',
+      subtitle: 'Junta-te à comunidade E-HPC+',
       showBackButton: true,
       child: Form(
         key: _formKey,
