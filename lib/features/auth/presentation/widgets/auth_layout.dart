@@ -68,7 +68,7 @@ class AuthLayout extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         const Text(
-                          'HPC+',
+                          'E-HPC+',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w900,

@@ -132,7 +132,7 @@ class _HinarioScreenState extends ConsumerState<HinarioScreen> {
       appBar: AppBar(
         title: Column(
           children: [
-            const Text('Hinário'),
+            const Text('Hinário HPC'),
             if (isOffline)
               Text(
                 'Modo Offline',

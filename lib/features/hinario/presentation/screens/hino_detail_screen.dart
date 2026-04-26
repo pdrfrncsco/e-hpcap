@@ -16,6 +16,7 @@ class HinoDetailScreen extends ConsumerStatefulWidget {
 
 class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
   late PageController _pageController;
+  Hino? _hinoAtual; // Para manter o título do AppBar sincronizado
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
   Widget build(BuildContext context) {
     final hinosAsyncValue = ref.watch(hinosListProvider);
     final theme = Theme.of(context);
+    final prefs = ref.watch(readingPreferencesProvider);
 
     return hinosAsyncValue.when(
       data: (hinos) {
@@ -49,8 +51,23 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
           return _buildSingleHinoLoader(widget.hinoId);
         }
 
+        // Se ainda não definimos o hino atual (primeira carga)
+        _hinoAtual ??= hinos[initialIndex];
+
         return Scaffold(
           appBar: AppBar(
+            title: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                '${_hinoAtual?.numero}. ${_hinoAtual?.titulo.toUpperCase()}',
+                key: ValueKey(_hinoAtual?.id),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            centerTitle: true,
             actions: [
               IconButton(
                 icon: const Icon(Icons.text_fields_rounded),
@@ -61,9 +78,12 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
           body: PageView.builder(
             controller: PageController(initialPage: initialIndex),
             itemCount: hinos.length,
+            onPageChanged: (index) {
+              setState(() {
+                _hinoAtual = hinos[index];
+              });
+            },
             itemBuilder: (context, index) {
-              // Em vez de passar o hino da lista, passamos o ID para que 
-              // o HinoPageItem carregue os detalhes completos (estrofes).
               return _HinoPageItem(hinoId: hinos[index].id);
             },
           ),
@@ -78,8 +98,17 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
   }
 
   Widget _buildSingleHinoLoader(int id) {
+    // Para links diretos onde não há uma lista de contexto
+    final hinoAsync = ref.watch(hinoDetalheProvider(id));
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
+        title: hinoAsync.maybeWhen(
+          data: (h) => Text('${h.numero}. ${h.titulo.toUpperCase()}'),
+          orElse: () => const Text('Hino'),
+        ),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.text_fields_rounded),
@@ -92,8 +121,6 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
   }
 }
 
-/// Widget que carrega e exibe um hino individual, garantindo que as estrofes
-/// são procuradas no repositório (DB ou API).
 class _HinoPageItem extends ConsumerWidget {
   final int hinoId;
 
@@ -101,8 +128,6 @@ class _HinoPageItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Aqui está a chave: watch(hinoDetalheProvider) força o fetch dos detalhes
-    // se o hino da lista não os tiver.
     final hinoAsync = ref.watch(hinoDetalheProvider(hinoId));
     final prefs = ref.watch(readingPreferencesProvider);
 
@@ -117,10 +142,9 @@ class _HinoPageItem extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Não foi possível carregar a letra deste hino.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.outline),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -146,45 +170,18 @@ class _HinoContent extends StatelessWidget {
     final theme = Theme.of(context);
     final estrofes = hino.estrofes ?? [];
     
-    final baseTitleSize = 24.0 * prefs.fontSizeMultiplier;
     final baseBodySize = 18.0 * prefs.fontSizeMultiplier;
     final baseLabelSize = 13.0 * prefs.fontSizeMultiplier;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 48),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${hino.numero}.',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: baseTitleSize * 1.1,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  hino.titulo.toUpperCase(),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                    fontSize: baseTitleSize * 0.9,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 20),
-          
+          // Informações de autoria (Metadados)
           if (hino.letraDe != null || hino.musicaDe != null)
             Container(
+              margin: const EdgeInsets.only(bottom: 32),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
@@ -198,18 +195,16 @@ class _HinoContent extends StatelessWidget {
                 children: [
                   if (hino.letraDe?.isNotEmpty ?? false)
                     Text('Letra: ${hino.letraDe}', 
-                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize)),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize, fontWeight: FontWeight.w600)),
                   if (hino.musicaDe?.isNotEmpty ?? false)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text('Música: ${hino.musicaDe}', 
-                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize)),
+                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize, fontWeight: FontWeight.w600)),
                     ),
                 ],
               ),
             ),
-            
-          const SizedBox(height: 32),
           
           if (estrofes.isEmpty)
             Center(
@@ -219,7 +214,7 @@ class _HinoContent extends StatelessWidget {
                   children: [
                     Icon(Icons.notes_rounded, size: 48, color: theme.colorScheme.outline),
                     const SizedBox(height: 16),
-                    const Text('Letra não disponível para leitura.'),
+                    const Text('Letra não disponível para leitura offline.'),
                   ],
                 ),
               ),
