@@ -127,7 +127,7 @@ class IgrejasRepository {
     }
   }
 
-  Future<Igreja> createMyIgreja(Map<String, dynamic> data) async {
+  Future<Igreja> createMyIgreja(dynamic data) async {
     try {
       final response = await _dio.post('igrejas/minha/', data: data);
       return Igreja.fromJson(response.data as Map<String, dynamic>);
@@ -139,7 +139,7 @@ class IgrejasRepository {
     }
   }
 
-  Future<Igreja> updateIgreja(int id, Map<String, dynamic> data) async {
+  Future<Igreja> updateIgreja(int id, dynamic data) async {
     try {
       final response = await _dio.patch('igrejas/$id/', data: data);
       return Igreja.fromJson(response.data as Map<String, dynamic>);

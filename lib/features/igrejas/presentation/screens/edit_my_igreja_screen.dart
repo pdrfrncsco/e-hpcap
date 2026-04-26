@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/models/igreja.dart';
@@ -59,6 +62,7 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
   final _siteController = TextEditingController();
   final _dataFundacaoController = TextEditingController();
 
+  File? _fotoFile;
   int? _selectedDistritoId;
   bool _isLoading = false;
   bool _isValidandoKuid = false;
@@ -70,6 +74,30 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
   Igreja? _currentIgreja;
 
   bool _isKuidCompleto(String kuid) => kuid.length == 15;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final sizeInBytes = await file.length();
+      final sizeInMb = sizeInBytes / (1024 * 1024);
+
+      if (sizeInMb > 1.0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A imagem é muito grande. Limite de 1MB.')),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _fotoFile = file;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -234,7 +262,7 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
 
     setState(() => _isLoading = true);
 
-    final data = {
+    final data = <String, dynamic>{
       'nome': _nomeController.text.trim(),
       'pastor': _pastorController.text.trim(),
       'kuid': kuidAtual,
@@ -242,21 +270,28 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
       'telefone': _telefoneController.text.trim(),
       'email': _emailController.text.trim(),
       'horario_culto': _horarioController.text.trim(),
-      'foto': _fotoController.text.trim(),
       'site': _siteController.text.trim(),
       'data_fundacao': _dataFundacaoController.text.trim(),
       'distrito_id': _selectedDistritoId,
     };
 
+    if (_fotoFile != null) {
+      data['foto'] = await dio.MultipartFile.fromFile(
+        _fotoFile!.path,
+        filename: 'igreja_foto.jpg',
+      );
+    }
+
     try {
+      final formData = dio.FormData.fromMap(data);
       if (_currentIgreja != null) {
         await ref
             .read(igrejasRepositoryProvider)
-            .updateIgreja(_currentIgreja!.id, data);
+            .updateIgreja(_currentIgreja!.id, formData);
       } else {
         await ref
             .read(igrejasRepositoryProvider)
-            .createMyIgreja(data);
+            .createMyIgreja(formData);
       }
 
       if (mounted) {
@@ -416,76 +451,41 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _fotoController,
-                            onChanged: (_) => setState(() {}),
-                            decoration: _decoration(
-                              label: 'URL da Foto da Igreja',
-                              hint: 'https://example.com/imagem.jpg',
-                              icon: Icons.image_outlined,
-                              suffixIcon: _fotoController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      onPressed: () => setState(() {
-                                        _fotoController.clear();
-                                      }),
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              height: 200,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: theme.colorScheme.outline),
+                              ),
+                              child: _fotoFile != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Image.file(_fotoFile!, fit: BoxFit.cover),
                                     )
-                                  : null,
+                                  : (_currentIgreja?.foto != null && _currentIgreja!.foto!.isNotEmpty)
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Image.network(_currentIgreja!.foto!, fit: BoxFit.cover),
+                                        )
+                                      : const Center(child: Icon(Icons.add_a_photo, size: 50)),
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            'Podes usar o Google Fotos (clique direito → copiar endereço da imagem), Imgur, ou outro serviço. O URL deve terminar em .jpg, .png ou .webp.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                          TextButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Escolher nova foto (Máx 1MB)'),
                           ),
-                          if (_fotoController.text.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: Image.network(
-                                  _fotoController.text,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    color: theme.colorScheme.errorContainer,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.error_outline,
-                                            color: theme.colorScheme.error),
-                                        const SizedBox(height: 4),
-                                        Text('URL de imagem inválido',
-                                            style: TextStyle(
-                                                color:
-                                                    theme.colorScheme.error)),
-                                      ],
-                                    ),
-                                  ),
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress
-                                                    .expectedTotalBytes !=
-                                                null
-                                            ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                                loadingProgress
-                                                    .expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
+                          if (_fotoFile != null)
+                            TextButton.icon(
+                              onPressed: () => setState(() => _fotoFile = null),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              label: const Text('Remover foto seleccionada', style: TextStyle(color: Colors.red)),
                             ),
-                          ],
                         ],
                       ),
                     ),
