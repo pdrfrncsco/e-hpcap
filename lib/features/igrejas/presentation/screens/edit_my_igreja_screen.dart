@@ -48,12 +48,16 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
   final _nomeController = TextEditingController();
   final _pastorController = TextEditingController();
   final _kuidController = TextEditingController();
+  final _cidadeController = TextEditingController();
   final _moradaController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
   final _telefoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _horarioController = TextEditingController();
+  final _fotoController = TextEditingController();
+  final _siteController = TextEditingController();
+  final _dataFundacaoController = TextEditingController();
 
   int? _selectedDistritoId;
   bool _isLoading = false;
@@ -78,12 +82,16 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
     _nomeController.dispose();
     _pastorController.dispose();
     _kuidController.dispose();
+    _cidadeController.dispose();
     _moradaController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
     _telefoneController.dispose();
     _emailController.dispose();
     _horarioController.dispose();
+    _fotoController.dispose();
+    _siteController.dispose();
+    _dataFundacaoController.dispose();
     _kuidDebounce?.cancel();
     super.dispose();
   }
@@ -97,12 +105,16 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
         _nomeController.text = igreja.nome;
         _pastorController.text = igreja.pastor;
         _kuidController.text = (igreja.kuid ?? '').toUpperCase();
+        _cidadeController.text = igreja.cidade;
         _moradaController.text = igreja.morada ?? '';
         _latitudeController.text = igreja.latitude?.toString() ?? '';
         _longitudeController.text = igreja.longitude?.toString() ?? '';
         _telefoneController.text = igreja.telefone ?? '';
         _emailController.text = igreja.email ?? '';
         _horarioController.text = igreja.horarioCulto ?? '';
+        _fotoController.text = igreja.foto ?? '';
+        _siteController.text = igreja.site ?? '';
+        _dataFundacaoController.text = igreja.dataFundacao ?? '';
         _selectedDistritoId = igreja.distrito?.id;
       });
       final kuid = (igreja.kuid ?? '').toUpperCase().trim();
@@ -156,6 +168,9 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
       setState(() {
         _kuidValido = true;
         _kuidMensagem = null;
+        if (result['cidade'] != null) {
+          _cidadeController.text = result['cidade'].toString();
+        }
         _moradaController.text = (result['morada'] ?? '').toString();
         _latitudeController.text = result['latitude']?.toString() ?? '';
         _longitudeController.text = result['longitude']?.toString() ?? '';
@@ -223,9 +238,13 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
       'nome': _nomeController.text.trim(),
       'pastor': _pastorController.text.trim(),
       'kuid': kuidAtual,
+      'cidade': _cidadeController.text.trim(),
       'telefone': _telefoneController.text.trim(),
       'email': _emailController.text.trim(),
       'horario_culto': _horarioController.text.trim(),
+      'foto': _fotoController.text.trim(),
+      'site': _siteController.text.trim(),
+      'data_fundacao': _dataFundacaoController.text.trim(),
       'distrito_id': _selectedDistritoId,
     };
 
@@ -264,11 +283,13 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
     required String label,
     String? hint,
     IconData? icon,
+    Widget? suffixIcon,
   }) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
       prefixIcon: icon == null ? null : Icon(icon),
+      suffixIcon: suffixIcon,
     );
   }
 
@@ -342,7 +363,7 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
                           const SizedBox(height: 16),
                           distritosAsync.when(
                             data: (distritos) => DropdownButtonFormField<int>(
-                              initialValue: _selectedDistritoId,
+                              value: _selectedDistritoId,
                               decoration: _decoration(
                                 label: 'Distrito Eclesiástico',
                                 icon: Icons.map_outlined,
@@ -364,6 +385,107 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
                             error: (e, __) =>
                                 Text('Erro ao carregar distritos: $e'),
                           ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _dataFundacaoController,
+                            decoration: _decoration(
+                              label: 'Data de Fundação',
+                              hint: 'Ex: 12/05/1990',
+                              icon: Icons.calendar_today_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(28),
+                        border:
+                            Border.all(color: theme.colorScheme.outlineVariant),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Identidade Visual',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _fotoController,
+                            onChanged: (_) => setState(() {}),
+                            decoration: _decoration(
+                              label: 'URL da Foto da Igreja',
+                              hint: 'https://example.com/imagem.jpg',
+                              icon: Icons.image_outlined,
+                              suffixIcon: _fotoController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () => setState(() {
+                                        _fotoController.clear();
+                                      }),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Podes usar o Google Fotos (clique direito → copiar endereço da imagem), Imgur, ou outro serviço. O URL deve terminar em .jpg, .png ou .webp.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          if (_fotoController.text.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: Image.network(
+                                  _fotoController.text,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                    color: theme.colorScheme.errorContainer,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.error_outline,
+                                            color: theme.colorScheme.error),
+                                        const SizedBox(height: 4),
+                                        Text('URL de imagem inválido',
+                                            style: TextStyle(
+                                                color:
+                                                    theme.colorScheme.error)),
+                                      ],
+                                    ),
+                                  ),
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress
+                                                    .expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -457,6 +579,16 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
+                            controller: _cidadeController,
+                            decoration: _decoration(
+                              label: 'Cidade (Obrigatório)',
+                              icon: Icons.location_city_rounded,
+                            ),
+                            validator: (v) =>
+                                (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
                             controller: _telefoneController,
                             decoration: _decoration(
                               label: 'Telefone',
@@ -469,6 +601,15 @@ class _EditMyIgrejaScreenState extends ConsumerState<EditMyIgrejaScreen> {
                             decoration: _decoration(
                               label: 'E-mail da Igreja',
                               icon: Icons.email_outlined,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _siteController,
+                            decoration: _decoration(
+                              label: 'Website / Redes Sociais',
+                              hint: 'https://facebook.com/minhaigreja',
+                              icon: Icons.language_rounded,
                             ),
                           ),
                         ],

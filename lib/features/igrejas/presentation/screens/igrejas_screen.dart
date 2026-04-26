@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/igrejas_providers.dart';
 import '../widgets/igreja_list_tile.dart';
 import '../widgets/igreja_card.dart';
@@ -13,6 +14,8 @@ class IgrejasScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final viewType = ref.watch(igrejasViewTypeProvider);
     final igrejasAsyncValue = ref.watch(igrejasListProvider);
+    final searchQuery = ref.watch(searchIgrejaQueryProvider);
+    final myIgrejaAsync = ref.watch(myIgrejaProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -28,33 +31,59 @@ class IgrejasScreen extends ConsumerWidget {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: SegmentedButton<IgrejasViewType>(
-              segments: const [
-                ButtonSegment(
-                  value: IgrejasViewType.lista,
-                  icon: Icon(Icons.list_rounded),
-                  label: Text('Lista'),
+          preferredSize: const Size.fromHeight(112),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SearchBar(
+                  hintText: 'Pesquisar igreja ou pastor...',
+                  leading: const Icon(Icons.search),
+                  elevation: WidgetStateProperty.all(0),
+                  backgroundColor: WidgetStateProperty.all(
+                      theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+                  onChanged: (value) {
+                    ref.read(searchIgrejaQueryProvider.notifier).state = value;
+                  },
+                  trailing: [
+                    if (searchQuery.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          ref.read(searchIgrejaQueryProvider.notifier).state = '';
+                        },
+                      ),
+                  ],
                 ),
-                ButtonSegment(
-                  value: IgrejasViewType.grade,
-                  icon: Icon(Icons.grid_view_rounded),
-                  label: Text('Grade'),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: SegmentedButton<IgrejasViewType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: IgrejasViewType.lista,
+                      icon: Icon(Icons.list_rounded),
+                      label: Text('Lista'),
+                    ),
+                    ButtonSegment(
+                      value: IgrejasViewType.grade,
+                      icon: Icon(Icons.grid_view_rounded),
+                      label: Text('Grelha'),
+                    ),
+                    ButtonSegment(
+                      value: IgrejasViewType.mapa,
+                      icon: Icon(Icons.map_rounded),
+                      label: Text('Mapa'),
+                    ),
+                  ],
+                  selected: {viewType},
+                  onSelectionChanged: (Set<IgrejasViewType> newSelection) {
+                    ref.read(igrejasViewTypeProvider.notifier).state =
+                        newSelection.first;
+                  },
                 ),
-                ButtonSegment(
-                  value: IgrejasViewType.mapa,
-                  icon: Icon(Icons.map_rounded),
-                  label: Text('Mapa'),
-                ),
-              ],
-              selected: {viewType},
-              onSelectionChanged: (Set<IgrejasViewType> newSelection) {
-                ref.read(igrejasViewTypeProvider.notifier).state =
-                    newSelection.first;
-              },
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -103,9 +132,12 @@ class IgrejasScreen extends ConsumerWidget {
                 itemCount: igrejas.length,
                 itemBuilder: (context, index) {
                   final igreja = igrejas[index];
-                  return IgrejaCard(
-                    igreja: igreja,
-                    onTap: () => context.go('/igrejas/${igreja.id}'),
+                  return Hero(
+                    tag: 'igreja_foto_${igreja.id}',
+                    child: IgrejaCard(
+                      igreja: igreja,
+                      onTap: () => context.go('/igrejas/${igreja.id}'),
+                    ),
                   );
                 },
               ),
@@ -166,6 +198,17 @@ class IgrejasScreen extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+      floatingActionButton: myIgrejaAsync.when(
+        data: (igreja) => igreja != null
+            ? FloatingActionButton.extended(
+                onPressed: () => context.push('/igrejas/minha-igreja'),
+                icon: const Icon(Icons.edit_note_rounded),
+                label: const Text('Minha Igreja'),
+              )
+            : null,
+        loading: () => null,
+        error: (_, __) => null,
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/igreja.dart';
 
 class IgrejaListTile extends StatelessWidget {
@@ -17,19 +18,36 @@ class IgrejaListTile extends StatelessWidget {
         igreja.cidade.trim().isEmpty ? 'Localização via KUID' : igreja.cidade;
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor:
-              theme.colorScheme.primaryContainer.withValues(alpha: 0.75),
-          child: Icon(
-            Icons.church,
-            color: theme.colorScheme.onPrimaryContainer,
+        leading: Hero(
+          tag: 'igreja_foto_${igreja.id}',
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: igreja.foto != null
+                ? CachedNetworkImage(
+                    imageUrl: igreja.foto!,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => Icon(
+                      Icons.church,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  )
+                : Icon(
+                    Icons.church,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
           ),
         ),
         title: Text(
@@ -46,7 +64,7 @@ class IgrejaListTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${igreja.distanciaKm} km',
+                  '${igreja.distanciaKm!.toStringAsFixed(1)} km',
                   style: TextStyle(
                     fontSize: 12,
                     color: theme.colorScheme.onSecondaryContainer,

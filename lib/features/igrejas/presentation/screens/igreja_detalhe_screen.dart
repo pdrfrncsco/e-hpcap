@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/igrejas_providers.dart';
 
 class IgrejaDetalheScreen extends ConsumerWidget {
@@ -24,50 +26,68 @@ class IgrejaDetalheScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncValue = ref.watch(igrejaDetalheProvider(igrejaId));
+    final myIgrejaAsync = ref.watch(myIgrejaProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalhe da Igreja'),
-      ),
       body: asyncValue.when(
         data: (igreja) {
+          final isManager = myIgrejaAsync.value?.id == igreja.id;
           final cidade = igreja.cidade.trim();
-          final provincia = (igreja.provincia ?? '').trim();
           final morada = (igreja.morada ?? '').trim();
-          final localizacaoTexto = [
-            if (morada.isNotEmpty) morada,
-            if (cidade.isNotEmpty || provincia.isNotEmpty)
-              [cidade, provincia].where((e) => e.isNotEmpty).join(' - '),
-          ].join('\n').trim();
 
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Image
-                if (igreja.foto != null)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 250,
-                    child: CachedNetworkImage(
-                      imageUrl: igreja.foto!,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    height: 200,
-                    color: theme.colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.church,
-                      size: 80,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
+          final confInfo = [
+            if (igreja.distrito?.nome != null) igreja.distrito!.nome,
+            if (igreja.distrito?.conferencia?.codigo != null)
+              igreja.distrito!.conferencia!.codigo,
+          ].join(' • ');
+
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 250,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Hero(
+                    tag: 'igreja_foto_${igreja.id}',
+                    child: igreja.foto != null
+                        ? CachedNetworkImage(
+                            imageUrl: igreja.foto!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Shimmer.fromColors(
+                              baseColor: theme.colorScheme.surfaceContainerHighest,
+                              highlightColor: theme.colorScheme.surface,
+                              child: Container(color: Colors.white),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: theme.colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.church,
+                                size: 80,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: theme.colorScheme.primaryContainer,
+                            child: Icon(
+                              Icons.church,
+                              size: 80,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
                   ),
-
-                Padding(
+                ),
+                actions: [
+                  if (isManager)
+                    IconButton(
+                      icon: const Icon(Icons.edit_note_rounded),
+                      onPressed: () => context.push('/configurar-igreja'),
+                    ),
+                ],
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,14 +109,26 @@ class IgrejaDetalheScreen extends ConsumerWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${igreja.distrito?.nome ?? "Sem distrito"} • ${igreja.distrito?.conferencia?.codigo ?? ""}',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w600,
+                            if (confInfo.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                confInfo,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
+                            ],
+                            if (igreja.dataFundacao != null &&
+                                igreja.dataFundacao!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Fundada em ${igreja.dataFundacao}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -118,17 +150,32 @@ class IgrejaDetalheScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                       ],
+                      if (igreja.site != null && igreja.site!.isNotEmpty) ...[
+                        _buildInfoRow(
+                          context,
+                          Icons.language_rounded,
+                          'Website / Redes Sociais',
+                          igreja.site!,
+                          onTap: () => _abrirLink(igreja.site!),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       Divider(
                           color: theme.colorScheme.outlineVariant
                               .withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
                       _buildInfoRow(
                         context,
+                        Icons.location_city,
+                        'Cidade',
+                        cidade,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow(
+                        context,
                         Icons.location_on,
                         'Morada',
-                        localizacaoTexto.isEmpty
-                            ? 'Localização disponível via KUID'
-                            : localizacaoTexto,
+                        morada.isEmpty ? 'Morada indisponível' : morada,
                       ),
                       const SizedBox(height: 24),
                       Row(
@@ -170,15 +217,18 @@ class IgrejaDetalheScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(error.toString(), textAlign: TextAlign.center),
+        error: (error, stack) => Scaffold(
+          appBar: AppBar(),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(error.toString(), textAlign: TextAlign.center),
+            ),
           ),
         ),
       ),
@@ -186,40 +236,52 @@ class IgrejaDetalheScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoRow(
-      BuildContext context, IconData icon, String title, String value) {
+      BuildContext context, IconData icon, String title, String value,
+      {VoidCallback? onTap}) {
     final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: theme.colorScheme.secondary),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+              child: Icon(icon, color: theme.colorScheme.secondary),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      height: 1.45,
+                      color: onTap != null ? theme.colorScheme.primary : null,
+                      decoration: onTap != null ? TextDecoration.underline : null,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
