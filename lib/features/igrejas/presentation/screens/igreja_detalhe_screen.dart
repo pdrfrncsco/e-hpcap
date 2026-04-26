@@ -8,6 +8,7 @@ import '../providers/igrejas_providers.dart';
 
 class IgrejaDetalheScreen extends ConsumerWidget {
   final int igrejaId;
+  static const double _expandedAppBarHeight = 250;
 
   const IgrejaDetalheScreen({super.key, required this.igrejaId});
 
@@ -45,44 +46,91 @@ class IgrejaDetalheScreen extends ConsumerWidget {
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 250,
+                expandedHeight: _expandedAppBarHeight,
                 pinned: true,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Hero(
-                    tag: 'igreja_foto_${igreja.id}',
-                    child: igreja.foto != null
-                        ? CachedNetworkImage(
-                            imageUrl: igreja.foto!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Shimmer.fromColors(
-                              baseColor: theme.colorScheme.surfaceContainerHighest,
-                              highlightColor: theme.colorScheme.surface,
-                              child: Container(color: Colors.white),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: theme.colorScheme.primaryContainer,
-                              child: Icon(
-                                Icons.church,
-                                size: 80,
-                                color: theme.colorScheme.onPrimaryContainer,
+                flexibleSpace: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final topPadding = MediaQuery.paddingOf(context).top;
+                    final collapsedHeight = kToolbarHeight + topPadding;
+                    final showTitle =
+                        constraints.maxHeight <= collapsedHeight + 18;
+
+                    return FlexibleSpaceBar(
+                      titlePadding: const EdgeInsetsDirectional.only(
+                        start: 72,
+                        bottom: 16,
+                        end: 16,
+                      ),
+                      title: AnimatedOpacity(
+                        opacity: showTitle ? 1 : 0,
+                        duration: const Duration(milliseconds: 220),
+                        child: Text(
+                          igreja.nome,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      background: Hero(
+                        tag: 'igreja_foto_${igreja.id}',
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            igreja.foto != null
+                                ? CachedNetworkImage(
+                                    imageUrl: igreja.foto!,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) =>
+                                        Shimmer.fromColors(
+                                      baseColor: theme.colorScheme
+                                          .surfaceContainerHighest,
+                                      highlightColor:
+                                          theme.colorScheme.surface,
+                                      child: Container(color: Colors.white),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Container(
+                                      color: theme.colorScheme.primaryContainer,
+                                      child: Icon(
+                                        Icons.church,
+                                        size: 80,
+                                        color: theme.colorScheme
+                                            .onPrimaryContainer,
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    color: theme.colorScheme.primaryContainer,
+                                    child: Icon(
+                                      Icons.church,
+                                      size: 80,
+                                      color: theme
+                                          .colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.1),
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.28),
+                                  ],
+                                ),
                               ),
                             ),
-                          )
-                        : Container(
-                            color: theme.colorScheme.primaryContainer,
-                            child: Icon(
-                              Icons.church,
-                              size: 80,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                  ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 actions: [
                   if (isManager)
                     IconButton(
                       icon: const Icon(Icons.edit_note_rounded),
-                      onPressed: () => context.push('/configurar-igreja'),
+                      onPressed: () => context.push('/igrejas/minha-igreja'),
                     ),
                 ],
               ),
@@ -154,7 +202,7 @@ class IgrejaDetalheScreen extends ConsumerWidget {
                         _buildInfoRow(
                           context,
                           Icons.language_rounded,
-                          'Website / Redes Sociais',
+                          'Website / Rede Social',
                           igreja.site!,
                           onTap: () => _abrirLink(igreja.site!),
                         ),
