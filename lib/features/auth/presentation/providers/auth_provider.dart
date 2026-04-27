@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../hinario/presentation/providers/hinario_providers.dart';
@@ -13,6 +15,27 @@ class Auth extends _$Auth {
   @override
   Stream<User?> build() {
     return _firebaseAuth.authStateChanges();
+  }
+
+  Future<void> signInWithGoogle() async {
+    if (kIsWeb) {
+      GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      await _firebaseAuth.signInWithPopup(googleProvider);
+      return;
+    }
+
+    final GoogleSignIn googleSignIn = GoogleSignIn();
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+    if (googleUser == null) return; // Usuário cancelou o login
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    await _firebaseAuth.signInWithCredential(credential);
   }
 
   Future<void> signInWithEmail(String email, String password) async {
@@ -37,8 +60,6 @@ class Auth extends _$Auth {
     final user = _firebaseAuth.currentUser;
     if (user != null) {
       await user.reload();
-      // O stream authStateChanges() nem sempre emite após o reload,
-      // por isso poderíamos forçar um estado manual aqui se necessário.
     }
   }
 
@@ -51,6 +72,7 @@ class Auth extends _$Auth {
 
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
+    await GoogleSignIn().signOut();
   }
 
   Future<String?> getIdToken() async {

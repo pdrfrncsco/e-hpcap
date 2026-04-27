@@ -1,7 +1,7 @@
 name: hpcapp
 description: "Hinário Povo Cantai da Igreja Metodista Unida em Angola"
 publish_to: 'none'
-version: 0.0.2+21
+version: 0.0.3+21
 
 environment:
   sdk: ^3.5.0
@@ -47,6 +47,7 @@ dependencies:
   firebase_core: ^3.10.1
   firebase_auth: ^5.4.1
   firebase_analytics: ^11.4.1
+  google_sign_in: ^6.2.2
 
   # ── Utilitários ──────────────────────────────────────────────────────────
   url_launcher:     ^6.3.1

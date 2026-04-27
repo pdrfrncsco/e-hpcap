@@ -52,6 +52,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _onGoogleLogin() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(authProvider.notifier).signInWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = _parseError(e);
+        });
+      }
+    }
+  }
+
   String _parseError(dynamic e) {
     final message = e.toString().toLowerCase();
     if (message.contains('user-not-found') || message.contains('wrong-password') || message.contains('invalid-credential')) {
@@ -125,6 +142,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: _isLoading
                     ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Text('ENTRAR', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('OU'),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _isLoading ? null : _onGoogleLogin,
+              icon: const Icon(Icons.login, size: 24),
+              label: const Text('ENTRAR COM GOOGLE'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
             const SizedBox(height: 24),
