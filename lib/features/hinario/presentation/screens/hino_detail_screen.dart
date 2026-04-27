@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/analytics_service.dart';
 import '../providers/hinario_providers.dart';
 import '../providers/reading_preferences_provider.dart';
 import '../../domain/models/estrofe.dart';
@@ -52,7 +53,18 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
         }
 
         // Se ainda não definimos o hino atual (primeira carga)
-        _hinoAtual ??= hinos[initialIndex];
+        if (_hinoAtual == null) {
+          _hinoAtual = hinos[initialIndex];
+          // Log inicial
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_hinoAtual != null) {
+              AnalyticsService.logHinoViewed(
+                hinoId: _hinoAtual!.id,
+                hinoTitle: _hinoAtual!.titulo,
+              );
+            }
+          });
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -82,6 +94,12 @@ class _HinoDetailScreenState extends ConsumerState<HinoDetailScreen> {
               setState(() {
                 _hinoAtual = hinos[index];
               });
+              if (_hinoAtual != null) {
+                AnalyticsService.logHinoViewed(
+                  hinoId: _hinoAtual!.id,
+                  hinoTitle: _hinoAtual!.titulo,
+                );
+              }
             },
             itemBuilder: (context, index) {
               return _HinoPageItem(hinoId: hinos[index].id);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../features/main_navigation/presentation/screens/main_navigation_screen.dart';
 import '../../features/hinario/presentation/screens/hinario_screen.dart';
 import '../../features/hinario/presentation/screens/hino_detail_screen.dart';
@@ -23,6 +24,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/hinario',
+    observers: [
+      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+    ],
     refreshListenable: null,
     redirect: (context, state) {
       final user = authState.value;

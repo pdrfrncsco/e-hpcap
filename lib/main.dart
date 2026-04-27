@@ -22,12 +22,14 @@ void main() async {
   }
 
   // Inicializar AdMob
-  MobileAds.instance.initialize();
-  
-  // Opcional: Configurar IDs de dispositivos de teste específicos
-  // MobileAds.instance.updateRequestConfiguration(
-  //   RequestConfiguration(testDeviceIds: ['ID_DO_DISPOSITIVO_DE_LOGS']),
-  // );
+  if (!kIsWeb) {
+    MobileAds.instance.initialize();
+    
+    // Opcional: Configurar IDs de dispositivos de teste específicos
+    // MobileAds.instance.updateRequestConfiguration(
+    //   RequestConfiguration(testDeviceIds: ['ID_DO_DISPOSITIVO_DE_LOGS']),
+    // );
+  }
 
   // Configurar ambiente automaticamente
   AppEnvironment.setup(kReleaseMode ? Environment.prod : Environment.dev);

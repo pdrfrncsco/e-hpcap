@@ -3,16 +3,20 @@ import 'package:flutter/foundation.dart';
 
 class AdConstants {
   static String get appId {
+    if (kIsWeb) return ''; // AdMob não é suportado nativamente no Flutter Web da mesma forma
+
     if (Platform.isAndroid) {
       return 'ca-app-pub-7763617297114393~8207179142';
     } else if (Platform.isIOS) {
       return 'ca-app-pub-7763617297114393~8207179142';
     } else {
-      throw UnsupportedError('Unsupported platform');
+      return '';
     }
   }
 
   static String get bannerAdUnitId {
+    if (kIsWeb) return '';
+
     if (kDebugMode) {
       // IDs de Teste Oficiais da Google
       return Platform.isAndroid 
@@ -25,7 +29,7 @@ class AdConstants {
     } else if (Platform.isIOS) {
       return 'ca-app-pub-7763617297114393/2954852464';
     } else {
-      throw UnsupportedError('Unsupported platform');
+      return '';
     }
   }
 }
