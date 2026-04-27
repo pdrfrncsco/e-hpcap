@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/constants/environment.dart';
@@ -19,6 +20,14 @@ void main() async {
   } catch (e) {
     print("Erro ao inicializar Firebase: $e");
   }
+
+  // Inicializar AdMob
+  MobileAds.instance.initialize();
+  
+  // Opcional: Configurar IDs de dispositivos de teste específicos
+  // MobileAds.instance.updateRequestConfiguration(
+  //   RequestConfiguration(testDeviceIds: ['ID_DO_DISPOSITIVO_DE_LOGS']),
+  // );
 
   // Configurar ambiente automaticamente
   AppEnvironment.setup(kReleaseMode ? Environment.prod : Environment.dev);
