@@ -1,4 +1,4 @@
-package com.ndeascloud.eclezzia
+package com.ndeascloud.ehpc
 
 import io.flutter.embedding.android.FlutterActivity
 
