@@ -75,6 +75,10 @@ class Auth extends _$Auth {
     await GoogleSignIn().signOut();
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
   Future<String?> getIdToken() async {
     final user = _firebaseAuth.currentUser;
     if (user == null) return null;

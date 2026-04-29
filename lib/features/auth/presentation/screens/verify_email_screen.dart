@@ -14,13 +14,14 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   bool _isResending = false;
+  bool _isChecking = false;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     // Agendar uma verificação automática a cada 5 segundos
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _checkVerification());
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _checkVerification(isManual: false));
   }
 
   @override
@@ -29,13 +30,32 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     super.dispose();
   }
 
-  Future<void> _checkVerification() async {
-    await ref.read(authProvider.notifier).reloadUser();
-    final user = ref.read(authProvider).value;
+  Future<void> _checkVerification({bool isManual = true}) async {
+    if (isManual) setState(() => _isChecking = true);
     
-    if (user?.emailVerified ?? false) {
-      _timer?.cancel();
-      if (mounted) context.go('/hinario');
+    try {
+      await ref.read(authProvider.notifier).reloadUser();
+      final user = ref.read(authProvider).value;
+      
+      if (user?.emailVerified ?? false) {
+        _timer?.cancel();
+        if (mounted) context.go('/hinario');
+      } else if (isManual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('O e-mail ainda não foi verificado. Verifica a tua caixa de entrada.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (isManual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao verificar: $e')),
+        );
+      }
+    } finally {
+      if (isManual && mounted) setState(() => _isChecking = false);
     }
   }
 
@@ -88,9 +108,11 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
             width: double.infinity,
             height: 56,
             child: FilledButton.icon(
-              onPressed: _checkVerification,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('JÁ VERIFIQUEI'),
+              onPressed: _isChecking ? null : () => _checkVerification(isManual: true),
+              icon: _isChecking 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.refresh_rounded),
+              label: Text(_isChecking ? 'A VERIFICAR...' : 'JÁ VERIFIQUEI'),
             ),
           ),
           const SizedBox(height: 16),

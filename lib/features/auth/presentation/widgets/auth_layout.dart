@@ -37,15 +37,7 @@ class AuthLayout extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-              if (showBackButton)
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                    onPressed: onBack ?? () => Navigator.of(context).pop(),
-                  ),
-                ),
+              // Conteúdo principal (atrás no Stack)
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
@@ -119,6 +111,25 @@ class AuthLayout extends StatelessWidget {
                   ),
                 ),
               ),
+              
+              // Botão Voltar (na frente no Stack para garantir clique)
+              if (showBackButton)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                        tooltip: 'Voltar',
+                        onPressed: onBack ?? () => Navigator.of(context).pop(),
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

@@ -12,6 +12,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/igrejas/presentation/screens/edit_my_igreja_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/verify_email_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +34,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = user != null;
       final isEmailVerified = user?.emailVerified ?? false;
       
-      final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final isLoggingIn = state.matchedLocation == '/login' || 
+                          state.matchedLocation == '/register' ||
+                          state.matchedLocation == '/forgot-password';
       final isVerifyingEmail = state.matchedLocation == '/verify-email';
 
       // 1. Se autenticado mas e-mail NÃO verificado -> Forçar ecrã de verificação
@@ -72,6 +75,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/register',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/verify-email',
