@@ -33,6 +33,51 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:449930785734:android:6c37d5bfd4e4d5795d38c7",
+        "android_client_info": {
+          "package_name": "com.ndeascloud.ehpc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "449930785734-jqlhs2129pkr42883jqg69uim9g44rn1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ndeascloud.ehpc",
+            "certificate_hash": "f778d958488331ec7b9cdc0229abd2a294399f46"
+          }
+        },
+        {
+          "client_id": "449930785734-uqcr5n75cfv4k3cmfeqk1lmln5pdo7c0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ndeascloud.ehpc",
+            "certificate_hash": "01f306852f6ae43273c318718dd3941a8b1d78bc"
+          }
+        },
+        {
+          "client_id": "449930785734-60jjddflotlg2kd5er5u217smcihbbvd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "449930785734-60jjddflotlg2kd5er5u217smcihbbvd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
