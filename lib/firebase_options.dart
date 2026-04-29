@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart'
 /// import 'firebase_options.dart';
 /// // ...
 /// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
+///   options: DefaultFirebaseOptions.currentPlatform,   
 /// );
 /// ```
 class DefaultFirebaseOptions {
@@ -46,29 +46,29 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k',
-    appId: '1:449930785734:web:e3995589417c80525d38c7', // Gerado com base no padrão
+  static const FirebaseOptions web = FirebaseOptions(    
+    apiKey: 'AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k',   
+    appId: '1:449930785734:web:e3995589417c80525d38c7',
     messagingSenderId: '449930785734',
     projectId: 'eclezzia-hpc',
     authDomain: 'eclezzia-hpc.firebaseapp.com',
-    storageBucket: 'eclezzia-hpc.firebasestorage.app',
+    storageBucket: 'eclezzia-hpc.firebasestorage.app',   
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k',
-    appId: '1:449930785734:android:3f699ae41d010a485d38c7',
+    apiKey: 'AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k',   
+    appId: '1:449930785734:android:6c37d5bfd4e4d5795d38c7',
     messagingSenderId: '449930785734',
     projectId: 'eclezzia-hpc',
-    storageBucket: 'eclezzia-hpc.firebasestorage.app',
+    storageBucket: 'eclezzia-hpc.firebasestorage.app',   
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k',
-    appId: '1:449930785734:ios:6f699ae41d010a485d38c7',
+  static const FirebaseOptions ios = FirebaseOptions(    
+    apiKey: 'AIzaSyB1FmWaXEXL-UGX_mslgIUV6ZPn55BNv9k',   
+    appId: '1:449930785734:ios:6f699ae41d010a485d38c7',  
     messagingSenderId: '449930785734',
     projectId: 'eclezzia-hpc',
-    storageBucket: 'eclezzia-hpc.firebasestorage.app',
-    iosBundleId: 'com.ndeascloud.eclezzia',
+    storageBucket: 'eclezzia-hpc.firebasestorage.app',   
+    iosBundleId: 'com.ndeascloud.hpc.hpcapp',
   );
 }

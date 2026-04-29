@@ -71,13 +71,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _parseError(dynamic e) {
     final message = e.toString().toLowerCase();
+    
+    // Erros comuns de Google Sign-In
+    if (message.contains('google_sign_in_error') || message.contains('exception: 10')) {
+      return 'Erro na configuração do Google (SHA-1 em falta ou ID de cliente incorreto).';
+    }
+    if (message.contains('popup-closed-by-user')) {
+      return 'O login foi cancelado (janela fechada).';
+    }
+    if (message.contains('disallowed_useragent')) {
+      return 'Este navegador não é permitido para login Google. Tenta no Chrome/Safari.';
+    }
+
+    // Erros comuns de Firebase Auth
     if (message.contains('user-not-found') || message.contains('wrong-password') || message.contains('invalid-credential')) {
       return 'E-mail ou senha incorretos.';
     }
     if (message.contains('network-request-failed')) {
       return 'Erro de rede. Verifica a tua conexão.';
     }
-    return 'Ocorreu um erro ao entrar. Tenta novamente.';
+    if (message.contains('too-many-requests')) {
+      return 'Muitas tentativas. Tenta novamente mais tarde.';
+    }
+    
+    // Fallback com detalhe técnico amigável
+    return 'Erro ao entrar: ${e.toString().split(':').last.trim()}';
   }
 
   @override
