@@ -38,35 +38,26 @@ final temasProvider = FutureProvider<List<Tema>>((ref) async {
   return repository.getTemas(cancelToken: cancelToken);
 });
 
-// Busca Hinos baseado nos filtros (Secão e Tema)
-final hinosListProvider = FutureProvider<List<Hino>>((ref) async {
-  final cancelToken = CancelToken();
-  ref.onDispose(() => cancelToken.cancel());
-
+// Busca Hinos baseado nos filtros (Secão e Tema) - Agora via Stream para reactividade total
+final hinosListProvider = StreamProvider<List<Hino>>((ref) {
   final repository = ref.watch(hinarioRepositoryProvider);
   final secao = ref.watch(secaoSelecionadaProvider);
   final temaSlug = ref.watch(temaSelecionadoProvider);
 
-  return repository.getHinos(
-    secao: secao, 
-    temaSlug: temaSlug,
-    cancelToken: cancelToken,
-  );
+  // Gatilha o carregamento/sync inicial em background
+  repository.getHinos(secao: secao, temaSlug: temaSlug);
+
+  // Retorna o Stream do banco local
+  return repository.watchHinos(secao: secao, temaSlug: temaSlug);
 });
 
 // Provider parametrizado para facilitar o swipe entre secções
-final hinosPorSecaoProvider = FutureProvider.family<List<Hino>, String>((ref, secao) async {
-  final cancelToken = CancelToken();
-  ref.onDispose(() => cancelToken.cancel());
-
+final hinosPorSecaoProvider = StreamProvider.family<List<Hino>, String>((ref, secao) {
   final repository = ref.watch(hinarioRepositoryProvider);
   final temaSlug = ref.watch(temaSelecionadoProvider);
 
-  return repository.getHinos(
-    secao: secao, 
-    temaSlug: temaSlug,
-    cancelToken: cancelToken,
-  );
+  repository.getHinos(secao: secao, temaSlug: temaSlug);
+  return repository.watchHinos(secao: secao, temaSlug: temaSlug);
 });
 
 // Busca Hinos por termo de pesquisa

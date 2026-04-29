@@ -95,6 +95,23 @@ class DatabaseService {
     return rows.map((row) => _mapRowToHino(row)).toList();
   }
 
+  /// Retorna um Stream de hinos que actualiza automaticamente quando o banco muda.
+  Stream<List<Hino>> watchHinos({String? secao, String? temaSlug}) {
+    final query = _db.select(_db.hinosTable);
+    
+    if (secao != null && secao.isNotEmpty) {
+      query.where((t) => t.secao.equals(secao));
+    }
+    
+    if (temaSlug != null && temaSlug.isNotEmpty) {
+      query.where((t) => t.temasJson.like('%"slug":"$temaSlug"%'));
+    }
+
+    query.orderBy([(t) => OrderingTerm(expression: t.numero)]);
+
+    return query.watch().map((rows) => rows.map((row) => _mapRowToHino(row)).toList());
+  }
+
   Future<Hino?> getHinoDetalhe(int id) async {
     final query = _db.select(_db.hinosTable)
       ..where((t) => t.id.equals(id))

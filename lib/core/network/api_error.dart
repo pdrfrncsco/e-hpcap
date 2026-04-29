@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiError implements Exception {
   final String message;
@@ -29,6 +30,11 @@ class ApiErrorFormatter {
       case DioExceptionType.receiveTimeout:
         return const ApiError('A ligação expirou. Tente novamente.');
       case DioExceptionType.connectionError:
+        if (kIsWeb) {
+          return const ApiError(
+            'Erro de rede ou de segurança (CORS). Verifique a ligação ou as permissões do servidor.',
+          );
+        }
         return const ApiError(
           'Sem ligação à internet. Verifique e tente novamente.',
         );

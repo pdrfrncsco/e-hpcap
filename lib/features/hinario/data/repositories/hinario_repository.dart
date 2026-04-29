@@ -79,19 +79,8 @@ class HinarioRepository {
     try {
       final localHinos = await _db.getHinos(secao: secao, temaSlug: temaSlug);
       if (localHinos.isNotEmpty) {
-        if (localHinos.length == 50) {
-          try {
-            return await _fetchAndSaveHinos(
-              secao: secao,
-              temaSlug: temaSlug,
-              cancelToken: cancelToken,
-            );
-          } catch (e) {
-            if (e is DioException && CancelToken.isCancel(e)) rethrow;
-            debugPrint('Erro ao actualizar cache parcial de hinos: $e');
-            return localHinos;
-          }
-        }
+        // Se temos dados locais, iniciamos o sync em background
+        // e retornamos o que temos imediatamente.
         _syncHinosInBackground(
           secao: secao,
           temaSlug: temaSlug,
@@ -102,11 +91,18 @@ class HinarioRepository {
     } catch (e) {
       debugPrint('Erro ao ler hinos do banco local: $e');
     }
+
+    // Se não há dados locais, fazemos o fetch síncrono inicial.
     return _fetchAndSaveHinos(
       secao: secao,
       temaSlug: temaSlug,
       cancelToken: cancelToken,
     );
+  }
+
+  /// Expõe um Stream do banco local que reflecte mudanças do background sync.
+  Stream<List<Hino>> watchHinos({String? secao, String? temaSlug}) {
+    return _db.watchHinos(secao: secao, temaSlug: temaSlug);
   }
 
   Future<List<Hino>> _fetchAndSaveHinos({
