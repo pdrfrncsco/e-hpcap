@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_layout.dart';
+import '../../../../core/services/analytics_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -42,6 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _emailController.text.trim(),
             _passwordController.text.trim(),
           );
+      // Log Analytics
+      AnalyticsService.logLogin('email');
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -59,6 +62,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       await ref.read(authProvider.notifier).signInWithGoogle();
+      // Log Analytics
+      AnalyticsService.logLogin('google');
     } catch (e) {
       if (mounted) {
         setState(() {

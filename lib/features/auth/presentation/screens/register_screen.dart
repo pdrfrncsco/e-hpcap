@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_layout.dart';
+import '../../../../core/services/analytics_service.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -49,6 +50,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _emailController.text.trim(),
             _passwordController.text.trim(),
           );
+      // Log Analytics
+      AnalyticsService.logSignUp('email');
+      
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
