@@ -29,7 +29,7 @@ class HinoCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Número do Hino com indicador offline
                 Stack(
@@ -75,10 +75,11 @@ class HinoCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 
-                // Título e Temas
+                // Título
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         children: [
@@ -131,17 +132,13 @@ class HinoCard extends StatelessWidget {
                   ),
                 ),
                 
+                const SizedBox(width: 8),
+
                 // Ícone de Ação
-                Align(
-                  alignment: Alignment.center,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ],
             ),
