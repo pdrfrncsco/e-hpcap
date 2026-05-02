@@ -22,6 +22,8 @@ class FiltrosHinario extends ConsumerWidget {
           _buildSecaoChip(context, ref, 'Umbundu', 'umb', secaoAtual),
           const SizedBox(width: 8),
           _buildSecaoChip(context, ref, 'Kikongo', 'kik', secaoAtual),
+          const SizedBox(width: 8),
+          _buildSecaoChip(context, ref, 'Textos Litúrgicos', 'txl', secaoAtual),
         ],
       ),
     );
@@ -36,7 +38,7 @@ class FiltrosHinario extends ConsumerWidget {
   ) {
     final isSelected = secaoAtual == valor;
     final theme = Theme.of(context);
-    
+
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,

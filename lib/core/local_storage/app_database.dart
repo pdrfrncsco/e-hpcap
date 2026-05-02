@@ -25,12 +25,39 @@ class TemasTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [HinosTable, TemasTable])
+class TextosLiturgicosTable extends Table {
+  IntColumn get id => integer()();
+  TextColumn get tipo => text()();
+  TextColumn get tipoDisplay => text()();
+  TextColumn get idioma => text().nullable()();
+  TextColumn get titulo => text()();
+  TextColumn get conteudo => text()();
+  IntColumn get ordem => integer().withDefault(const Constant(1))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [HinosTable, TemasTable, TextosLiturgicosTable])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
+      onUpgrade: (m, from, to) async {
+        if (from < 2) {
+          await m.createTable(textosLiturgicosTable);
+        }
+      },
+    );
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(

@@ -585,16 +585,392 @@ class TemasTableCompanion extends UpdateCompanion<TemasTableData> {
   }
 }
 
+class $TextosLiturgicosTableTable extends TextosLiturgicosTable
+    with TableInfo<$TextosLiturgicosTableTable, TextosLiturgicosTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TextosLiturgicosTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+      'tipo', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _tipoDisplayMeta =
+      const VerificationMeta('tipoDisplay');
+  @override
+  late final GeneratedColumn<String> tipoDisplay = GeneratedColumn<String>(
+      'tipo_display', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _idiomaMeta = const VerificationMeta('idioma');
+  @override
+  late final GeneratedColumn<String> idioma = GeneratedColumn<String>(
+      'idioma', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tituloMeta = const VerificationMeta('titulo');
+  @override
+  late final GeneratedColumn<String> titulo = GeneratedColumn<String>(
+      'titulo', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _conteudoMeta =
+      const VerificationMeta('conteudo');
+  @override
+  late final GeneratedColumn<String> conteudo = GeneratedColumn<String>(
+      'conteudo', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ordemMeta = const VerificationMeta('ordem');
+  @override
+  late final GeneratedColumn<int> ordem = GeneratedColumn<int>(
+      'ordem', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, tipo, tipoDisplay, idioma, titulo, conteudo, ordem];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'textos_liturgicos_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TextosLiturgicosTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+          _tipoMeta, tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta));
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('tipo_display')) {
+      context.handle(
+          _tipoDisplayMeta,
+          tipoDisplay.isAcceptableOrUnknown(
+              data['tipo_display']!, _tipoDisplayMeta));
+    } else if (isInserting) {
+      context.missing(_tipoDisplayMeta);
+    }
+    if (data.containsKey('idioma')) {
+      context.handle(_idiomaMeta,
+          idioma.isAcceptableOrUnknown(data['idioma']!, _idiomaMeta));
+    }
+    if (data.containsKey('titulo')) {
+      context.handle(_tituloMeta,
+          titulo.isAcceptableOrUnknown(data['titulo']!, _tituloMeta));
+    } else if (isInserting) {
+      context.missing(_tituloMeta);
+    }
+    if (data.containsKey('conteudo')) {
+      context.handle(_conteudoMeta,
+          conteudo.isAcceptableOrUnknown(data['conteudo']!, _conteudoMeta));
+    } else if (isInserting) {
+      context.missing(_conteudoMeta);
+    }
+    if (data.containsKey('ordem')) {
+      context.handle(
+          _ordemMeta, ordem.isAcceptableOrUnknown(data['ordem']!, _ordemMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TextosLiturgicosTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TextosLiturgicosTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      tipo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tipo'])!,
+      tipoDisplay: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tipo_display'])!,
+      idioma: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}idioma']),
+      titulo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}titulo'])!,
+      conteudo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}conteudo'])!,
+      ordem: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}ordem'])!,
+    );
+  }
+
+  @override
+  $TextosLiturgicosTableTable createAlias(String alias) {
+    return $TextosLiturgicosTableTable(attachedDatabase, alias);
+  }
+}
+
+class TextosLiturgicosTableData extends DataClass
+    implements Insertable<TextosLiturgicosTableData> {
+  final int id;
+  final String tipo;
+  final String tipoDisplay;
+  final String? idioma;
+  final String titulo;
+  final String conteudo;
+  final int ordem;
+  const TextosLiturgicosTableData(
+      {required this.id,
+      required this.tipo,
+      required this.tipoDisplay,
+      this.idioma,
+      required this.titulo,
+      required this.conteudo,
+      required this.ordem});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['tipo'] = Variable<String>(tipo);
+    map['tipo_display'] = Variable<String>(tipoDisplay);
+    if (!nullToAbsent || idioma != null) {
+      map['idioma'] = Variable<String>(idioma);
+    }
+    map['titulo'] = Variable<String>(titulo);
+    map['conteudo'] = Variable<String>(conteudo);
+    map['ordem'] = Variable<int>(ordem);
+    return map;
+  }
+
+  TextosLiturgicosTableCompanion toCompanion(bool nullToAbsent) {
+    return TextosLiturgicosTableCompanion(
+      id: Value(id),
+      tipo: Value(tipo),
+      tipoDisplay: Value(tipoDisplay),
+      idioma:
+          idioma == null && nullToAbsent ? const Value.absent() : Value(idioma),
+      titulo: Value(titulo),
+      conteudo: Value(conteudo),
+      ordem: Value(ordem),
+    );
+  }
+
+  factory TextosLiturgicosTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TextosLiturgicosTableData(
+      id: serializer.fromJson<int>(json['id']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      tipoDisplay: serializer.fromJson<String>(json['tipoDisplay']),
+      idioma: serializer.fromJson<String?>(json['idioma']),
+      titulo: serializer.fromJson<String>(json['titulo']),
+      conteudo: serializer.fromJson<String>(json['conteudo']),
+      ordem: serializer.fromJson<int>(json['ordem']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tipo': serializer.toJson<String>(tipo),
+      'tipoDisplay': serializer.toJson<String>(tipoDisplay),
+      'idioma': serializer.toJson<String?>(idioma),
+      'titulo': serializer.toJson<String>(titulo),
+      'conteudo': serializer.toJson<String>(conteudo),
+      'ordem': serializer.toJson<int>(ordem),
+    };
+  }
+
+  TextosLiturgicosTableData copyWith(
+          {int? id,
+          String? tipo,
+          String? tipoDisplay,
+          Value<String?> idioma = const Value.absent(),
+          String? titulo,
+          String? conteudo,
+          int? ordem}) =>
+      TextosLiturgicosTableData(
+        id: id ?? this.id,
+        tipo: tipo ?? this.tipo,
+        tipoDisplay: tipoDisplay ?? this.tipoDisplay,
+        idioma: idioma.present ? idioma.value : this.idioma,
+        titulo: titulo ?? this.titulo,
+        conteudo: conteudo ?? this.conteudo,
+        ordem: ordem ?? this.ordem,
+      );
+  TextosLiturgicosTableData copyWithCompanion(
+      TextosLiturgicosTableCompanion data) {
+    return TextosLiturgicosTableData(
+      id: data.id.present ? data.id.value : this.id,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      tipoDisplay:
+          data.tipoDisplay.present ? data.tipoDisplay.value : this.tipoDisplay,
+      idioma: data.idioma.present ? data.idioma.value : this.idioma,
+      titulo: data.titulo.present ? data.titulo.value : this.titulo,
+      conteudo: data.conteudo.present ? data.conteudo.value : this.conteudo,
+      ordem: data.ordem.present ? data.ordem.value : this.ordem,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TextosLiturgicosTableData(')
+          ..write('id: $id, ')
+          ..write('tipo: $tipo, ')
+          ..write('tipoDisplay: $tipoDisplay, ')
+          ..write('idioma: $idioma, ')
+          ..write('titulo: $titulo, ')
+          ..write('conteudo: $conteudo, ')
+          ..write('ordem: $ordem')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, tipo, tipoDisplay, idioma, titulo, conteudo, ordem);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TextosLiturgicosTableData &&
+          other.id == this.id &&
+          other.tipo == this.tipo &&
+          other.tipoDisplay == this.tipoDisplay &&
+          other.idioma == this.idioma &&
+          other.titulo == this.titulo &&
+          other.conteudo == this.conteudo &&
+          other.ordem == this.ordem);
+}
+
+class TextosLiturgicosTableCompanion
+    extends UpdateCompanion<TextosLiturgicosTableData> {
+  final Value<int> id;
+  final Value<String> tipo;
+  final Value<String> tipoDisplay;
+  final Value<String?> idioma;
+  final Value<String> titulo;
+  final Value<String> conteudo;
+  final Value<int> ordem;
+  const TextosLiturgicosTableCompanion({
+    this.id = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.tipoDisplay = const Value.absent(),
+    this.idioma = const Value.absent(),
+    this.titulo = const Value.absent(),
+    this.conteudo = const Value.absent(),
+    this.ordem = const Value.absent(),
+  });
+  TextosLiturgicosTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String tipo,
+    required String tipoDisplay,
+    this.idioma = const Value.absent(),
+    required String titulo,
+    required String conteudo,
+    this.ordem = const Value.absent(),
+  })  : tipo = Value(tipo),
+        tipoDisplay = Value(tipoDisplay),
+        titulo = Value(titulo),
+        conteudo = Value(conteudo);
+  static Insertable<TextosLiturgicosTableData> custom({
+    Expression<int>? id,
+    Expression<String>? tipo,
+    Expression<String>? tipoDisplay,
+    Expression<String>? idioma,
+    Expression<String>? titulo,
+    Expression<String>? conteudo,
+    Expression<int>? ordem,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tipo != null) 'tipo': tipo,
+      if (tipoDisplay != null) 'tipo_display': tipoDisplay,
+      if (idioma != null) 'idioma': idioma,
+      if (titulo != null) 'titulo': titulo,
+      if (conteudo != null) 'conteudo': conteudo,
+      if (ordem != null) 'ordem': ordem,
+    });
+  }
+
+  TextosLiturgicosTableCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? tipo,
+      Value<String>? tipoDisplay,
+      Value<String?>? idioma,
+      Value<String>? titulo,
+      Value<String>? conteudo,
+      Value<int>? ordem}) {
+    return TextosLiturgicosTableCompanion(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      tipoDisplay: tipoDisplay ?? this.tipoDisplay,
+      idioma: idioma ?? this.idioma,
+      titulo: titulo ?? this.titulo,
+      conteudo: conteudo ?? this.conteudo,
+      ordem: ordem ?? this.ordem,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (tipoDisplay.present) {
+      map['tipo_display'] = Variable<String>(tipoDisplay.value);
+    }
+    if (idioma.present) {
+      map['idioma'] = Variable<String>(idioma.value);
+    }
+    if (titulo.present) {
+      map['titulo'] = Variable<String>(titulo.value);
+    }
+    if (conteudo.present) {
+      map['conteudo'] = Variable<String>(conteudo.value);
+    }
+    if (ordem.present) {
+      map['ordem'] = Variable<int>(ordem.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TextosLiturgicosTableCompanion(')
+          ..write('id: $id, ')
+          ..write('tipo: $tipo, ')
+          ..write('tipoDisplay: $tipoDisplay, ')
+          ..write('idioma: $idioma, ')
+          ..write('titulo: $titulo, ')
+          ..write('conteudo: $conteudo, ')
+          ..write('ordem: $ordem')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $HinosTableTable hinosTable = $HinosTableTable(this);
   late final $TemasTableTable temasTable = $TemasTableTable(this);
+  late final $TextosLiturgicosTableTable textosLiturgicosTable =
+      $TextosLiturgicosTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [hinosTable, temasTable];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [hinosTable, temasTable, textosLiturgicosTable];
 }
 
 typedef $$HinosTableTableCreateCompanionBuilder = HinosTableCompanion Function({
@@ -927,6 +1303,210 @@ typedef $$TemasTableTableProcessedTableManager = ProcessedTableManager<
     ),
     TemasTableData,
     PrefetchHooks Function()>;
+typedef $$TextosLiturgicosTableTableCreateCompanionBuilder
+    = TextosLiturgicosTableCompanion Function({
+  Value<int> id,
+  required String tipo,
+  required String tipoDisplay,
+  Value<String?> idioma,
+  required String titulo,
+  required String conteudo,
+  Value<int> ordem,
+});
+typedef $$TextosLiturgicosTableTableUpdateCompanionBuilder
+    = TextosLiturgicosTableCompanion Function({
+  Value<int> id,
+  Value<String> tipo,
+  Value<String> tipoDisplay,
+  Value<String?> idioma,
+  Value<String> titulo,
+  Value<String> conteudo,
+  Value<int> ordem,
+});
+
+class $$TextosLiturgicosTableTableFilterComposer
+    extends Composer<_$AppDatabase, $TextosLiturgicosTableTable> {
+  $$TextosLiturgicosTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+      column: $table.tipo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tipoDisplay => $composableBuilder(
+      column: $table.tipoDisplay, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get idioma => $composableBuilder(
+      column: $table.idioma, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get titulo => $composableBuilder(
+      column: $table.titulo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get conteudo => $composableBuilder(
+      column: $table.conteudo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get ordem => $composableBuilder(
+      column: $table.ordem, builder: (column) => ColumnFilters(column));
+}
+
+class $$TextosLiturgicosTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $TextosLiturgicosTableTable> {
+  $$TextosLiturgicosTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+      column: $table.tipo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tipoDisplay => $composableBuilder(
+      column: $table.tipoDisplay, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get idioma => $composableBuilder(
+      column: $table.idioma, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get titulo => $composableBuilder(
+      column: $table.titulo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get conteudo => $composableBuilder(
+      column: $table.conteudo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get ordem => $composableBuilder(
+      column: $table.ordem, builder: (column) => ColumnOrderings(column));
+}
+
+class $$TextosLiturgicosTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TextosLiturgicosTableTable> {
+  $$TextosLiturgicosTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoDisplay => $composableBuilder(
+      column: $table.tipoDisplay, builder: (column) => column);
+
+  GeneratedColumn<String> get idioma =>
+      $composableBuilder(column: $table.idioma, builder: (column) => column);
+
+  GeneratedColumn<String> get titulo =>
+      $composableBuilder(column: $table.titulo, builder: (column) => column);
+
+  GeneratedColumn<String> get conteudo =>
+      $composableBuilder(column: $table.conteudo, builder: (column) => column);
+
+  GeneratedColumn<int> get ordem =>
+      $composableBuilder(column: $table.ordem, builder: (column) => column);
+}
+
+class $$TextosLiturgicosTableTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TextosLiturgicosTableTable,
+    TextosLiturgicosTableData,
+    $$TextosLiturgicosTableTableFilterComposer,
+    $$TextosLiturgicosTableTableOrderingComposer,
+    $$TextosLiturgicosTableTableAnnotationComposer,
+    $$TextosLiturgicosTableTableCreateCompanionBuilder,
+    $$TextosLiturgicosTableTableUpdateCompanionBuilder,
+    (
+      TextosLiturgicosTableData,
+      BaseReferences<_$AppDatabase, $TextosLiturgicosTableTable,
+          TextosLiturgicosTableData>
+    ),
+    TextosLiturgicosTableData,
+    PrefetchHooks Function()> {
+  $$TextosLiturgicosTableTableTableManager(
+      _$AppDatabase db, $TextosLiturgicosTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TextosLiturgicosTableTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TextosLiturgicosTableTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TextosLiturgicosTableTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> tipo = const Value.absent(),
+            Value<String> tipoDisplay = const Value.absent(),
+            Value<String?> idioma = const Value.absent(),
+            Value<String> titulo = const Value.absent(),
+            Value<String> conteudo = const Value.absent(),
+            Value<int> ordem = const Value.absent(),
+          }) =>
+              TextosLiturgicosTableCompanion(
+            id: id,
+            tipo: tipo,
+            tipoDisplay: tipoDisplay,
+            idioma: idioma,
+            titulo: titulo,
+            conteudo: conteudo,
+            ordem: ordem,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String tipo,
+            required String tipoDisplay,
+            Value<String?> idioma = const Value.absent(),
+            required String titulo,
+            required String conteudo,
+            Value<int> ordem = const Value.absent(),
+          }) =>
+              TextosLiturgicosTableCompanion.insert(
+            id: id,
+            tipo: tipo,
+            tipoDisplay: tipoDisplay,
+            idioma: idioma,
+            titulo: titulo,
+            conteudo: conteudo,
+            ordem: ordem,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$TextosLiturgicosTableTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $TextosLiturgicosTableTable,
+        TextosLiturgicosTableData,
+        $$TextosLiturgicosTableTableFilterComposer,
+        $$TextosLiturgicosTableTableOrderingComposer,
+        $$TextosLiturgicosTableTableAnnotationComposer,
+        $$TextosLiturgicosTableTableCreateCompanionBuilder,
+        $$TextosLiturgicosTableTableUpdateCompanionBuilder,
+        (
+          TextosLiturgicosTableData,
+          BaseReferences<_$AppDatabase, $TextosLiturgicosTableTable,
+              TextosLiturgicosTableData>
+        ),
+        TextosLiturgicosTableData,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -935,4 +1515,6 @@ class $AppDatabaseManager {
       $$HinosTableTableTableManager(_db, _db.hinosTable);
   $$TemasTableTableTableManager get temasTable =>
       $$TemasTableTableTableManager(_db, _db.temasTable);
+  $$TextosLiturgicosTableTableTableManager get textosLiturgicosTable =>
+      $$TextosLiturgicosTableTableTableManager(_db, _db.textosLiturgicosTable);
 }

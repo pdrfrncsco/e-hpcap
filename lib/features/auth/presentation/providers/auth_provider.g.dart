@@ -6,13 +6,11 @@ part of 'auth_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentUserHash() => r'4a1af10b9287aad79c1eaa13c5fbc46e0431d055';
+String _$currentUserHash() => r'b189fef18135d90ed963292bd4c72902f919be0c';
 
-/// Provider para os dados do utilizador vindos da nossa API (Django)
-///
-/// Copied from [currentUser].
+/// See also [currentUser].
 @ProviderFor(currentUser)
-final currentUserProvider = AutoDisposeFutureProvider<AuthUser?>.internal(
+final currentUserProvider = FutureProvider<AuthUser?>.internal(
   currentUser,
   name: r'currentUserProvider',
   debugGetCreateSourceHash:
@@ -23,8 +21,8 @@ final currentUserProvider = AutoDisposeFutureProvider<AuthUser?>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef CurrentUserRef = AutoDisposeFutureProviderRef<AuthUser?>;
-String _$authHash() => r'b3ce4078b0233e669b53c97f937a2818bf66b80a';
+typedef CurrentUserRef = FutureProviderRef<AuthUser?>;
+String _$authHash() => r'f336df6efd86f2f47bf4060ed3b44a636341abf9';
 
 /// See also [Auth].
 @ProviderFor(Auth)

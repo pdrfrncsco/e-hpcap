@@ -8,15 +8,17 @@ import '../providers/download_notifier.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../widgets/hino_card.dart';
 import '../widgets/filtros_hinario.dart';
+import '../widgets/txl_list_widget.dart';
 
 const _nomesSecao = {
   'pt': 'Português',
   'kim': 'Kimbundu',
   'umb': 'Umbundu',
   'kik': 'Kikongo',
+  'txl': 'Textos Litúrgicos',
 };
 
-final _secoesOrdem = ['pt', 'kim', 'umb', 'kik'];
+final _secoesOrdem = ['pt', 'kim', 'umb', 'kik', 'txl'];
 
 class HinarioScreen extends ConsumerStatefulWidget {
   const HinarioScreen({super.key});
@@ -44,6 +46,14 @@ class _HinarioScreenState extends ConsumerState<HinarioScreen> {
   }
 
   void _iniciarDownload(BuildContext context, String secao) {
+    if (secao == 'txl') {
+      // Por agora não temos download de TXL em separado, mas podemos implementar depois.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Textos litúrgicos são carregados automaticamente.')),
+      );
+      return;
+    }
+
     final nomeSecao = _nomesSecao[secao] ?? secao.toUpperCase();
 
     showDialog(
@@ -116,7 +126,7 @@ class _HinarioScreenState extends ConsumerState<HinarioScreen> {
     final theme = Theme.of(context);
     final isOffline = connectivityAsync.value == ConnectivityStatus.offline;
 
-    // Escutar mudanças no provider para animar o PageView (se vier de um clique no Chip)
+    // Escutar mudanças no provider para animar o PageView (se viera de um clique no Chip)
     ref.listen<String>(secaoSelecionadaProvider, (previous, next) {
       final targetPage = _secoesOrdem.indexOf(next);
       if (targetPage >= 0 && _pageController.hasClients && _pageController.page?.round() != targetPage) {
@@ -133,14 +143,14 @@ class _HinarioScreenState extends ConsumerState<HinarioScreen> {
         title: Column(
           children: [
             const Text('Hinário HPC'),
-            if (isOffline)
-              Text(
-                'Modo Offline',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+            // if (isOffline)
+            //   Text(
+            //     'Modo Offline',
+            //     style: theme.textTheme.labelSmall?.copyWith(
+            //       color: theme.colorScheme.onSurfaceVariant,
+            //       fontWeight: FontWeight.w400,
+            //     ),
+            //   ),
           ],
         ),
         centerTitle: true,
@@ -198,6 +208,9 @@ class _HinarioScreenState extends ConsumerState<HinarioScreen> {
               },
               itemBuilder: (context, index) {
                 final secao = _secoesOrdem[index];
+                if (secao == 'txl') {
+                  return const TxlListWidget();
+                }
                 return _ListaHinosSecao(secao: secao, isOffline: isOffline);
               },
             ),

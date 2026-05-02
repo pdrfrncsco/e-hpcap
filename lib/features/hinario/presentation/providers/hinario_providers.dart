@@ -3,8 +3,10 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/local_storage/database_service.dart';
 import '../../data/repositories/hinario_repository.dart';
+import '../../data/repositories/texto_liturgico_repository.dart';
 import '../../domain/models/hino.dart';
 import '../../domain/models/tema.dart';
+import '../../domain/models/texto_liturgico.dart';
 import '../../../auth/data/auth_interceptor.dart';
 
 // --- Services ---
@@ -13,11 +15,17 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 final databaseServiceProvider = Provider<DatabaseService>((ref) => DatabaseService());
 
-// --- Repository ---
+// --- Repositories ---
 final hinarioRepositoryProvider = Provider<HinarioRepository>((ref) {
   final dio = ref.watch(apiClientProvider).client;
   final db = ref.watch(databaseServiceProvider);
   return HinarioRepository(dio, db);
+});
+
+final textoLiturgicoRepositoryProvider = Provider<TextoLiturgicoRepository>((ref) {
+  final dio = ref.watch(apiClientProvider).client;
+  final db = ref.watch(databaseServiceProvider);
+  return TextoLiturgicoRepository(dio, db);
 });
 
 // --- Filtros State ---
@@ -87,4 +95,22 @@ final hinoDetalheProvider = FutureProvider.family<Hino, int>((ref, id) async {
 
   final repository = ref.watch(hinarioRepositoryProvider);
   return repository.getHinoDetalhe(id, cancelToken: cancelToken);
+});
+
+// --- Texto Litúrgico Providers ---
+
+final textosLiturgicosProvider = FutureProvider<List<TextoLiturgico>>((ref) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
+  final repository = ref.watch(textoLiturgicoRepositoryProvider);
+  return repository.getTextosLiturgicos(cancelToken: cancelToken);
+});
+
+final textosLiturgicosPorTipoProvider = FutureProvider.family<List<TextoLiturgico>, String>((ref, tipo) async {
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel());
+
+  final repository = ref.watch(textoLiturgicoRepositoryProvider);
+  return repository.getTextosLiturgicos(tipo: tipo, cancelToken: cancelToken);
 });

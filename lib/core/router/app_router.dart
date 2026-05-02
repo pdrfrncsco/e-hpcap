@@ -5,6 +5,8 @@ import '../../features/main_navigation/presentation/screens/main_navigation_scre
 import '../../features/hinario/presentation/screens/hinario_screen.dart';
 import '../../features/hinario/presentation/screens/hino_detail_screen.dart';
 import '../../features/hinario/presentation/screens/hino_search_screen.dart';
+import '../../features/hinario/presentation/screens/texto_liturgico_list_screen.dart';
+import '../../features/hinario/presentation/screens/texto_liturgico_detail_screen.dart';
 import '../../features/igrejas/presentation/screens/igrejas_screen.dart';
 import '../../features/igrejas/presentation/screens/igreja_detalhe_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -106,6 +108,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'search',
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) => const HinoSearchScreen(),
+                  ),
+                  GoRoute(
+                    path: 'txl/tipo/:tipo',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      final tipo = state.pathParameters['tipo'] ?? '';
+                      return TextoLiturgicoListScreen(tipo: tipo);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'txl/:id',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      final idStr = state.pathParameters['id'];
+                      final id = int.tryParse(idStr ?? '') ?? 0;
+                      return TextoLiturgicoDetailScreen(textoId: id);
+                    },
                   ),
                   GoRoute(
                     path: ':id',

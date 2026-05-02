@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'app_database.dart';
 import '../../features/hinario/domain/models/hino.dart';
 import '../../features/hinario/domain/models/tema.dart';
+import '../../features/hinario/domain/models/texto_liturgico.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -156,8 +157,62 @@ class DatabaseService {
     }).toList();
   }
 
+  // --- Texto Litúrgico ---
+
+  Future<void> saveTextosLiturgicos(List<TextoLiturgico> textos) async {
+    await _db.batch((batch) {
+      for (final texto in textos) {
+        batch.insert(
+          _db.textosLiturgicosTable,
+          TextosLiturgicosTableCompanion.insert(
+            id: Value(texto.id),
+            tipo: texto.tipo,
+            tipoDisplay: texto.tipoDisplay,
+            idioma: Value(texto.idioma),
+            titulo: texto.titulo,
+            conteudo: texto.conteudo,
+            ordem: Value(texto.ordem),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
+  Future<List<TextoLiturgico>> getTextosLiturgicos({String? tipo, String? idioma}) async {
+    final query = _db.select(_db.textosLiturgicosTable);
+    
+    if (tipo != null && tipo.isNotEmpty) {
+      query.where((t) => t.tipo.equals(tipo));
+    }
+    if (idioma != null && idioma.isNotEmpty) {
+      query.where((t) => t.idioma.equals(idioma));
+    }
+
+    query.orderBy([
+      (t) => OrderingTerm(expression: t.tipo),
+      (t) => OrderingTerm(expression: t.ordem),
+    ]);
+
+    final rows = await query.get();
+    return rows.map((row) => _mapRowToTextoLiturgico(row)).toList();
+  }
+
+  TextoLiturgico _mapRowToTextoLiturgico(TextosLiturgicosTableData row) {
+    return TextoLiturgico(
+      id: row.id,
+      tipo: row.tipo,
+      tipoDisplay: row.tipoDisplay,
+      idioma: row.idioma,
+      titulo: row.titulo,
+      conteudo: row.conteudo,
+      ordem: row.ordem,
+    );
+  }
+
   Future<void> clearAll() async {
     await _db.delete(_db.hinosTable).go();
     await _db.delete(_db.temasTable).go();
+    await _db.delete(_db.textosLiturgicosTable).go();
   }
 }
