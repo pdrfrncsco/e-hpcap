@@ -102,6 +102,7 @@ class HinoCard extends StatelessWidget {
                             ),
                         ],
                       ),
+                      /*
                       if (hino.temas.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Wrap(
@@ -125,6 +126,7 @@ class HinoCard extends StatelessWidget {
                           }).toList(),
                         ),
                       ],
+                      */
                     ],
                   ),
                 ),
