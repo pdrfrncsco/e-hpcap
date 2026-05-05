@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../providers/hinario_providers.dart';
+import '../providers/reading_preferences_provider.dart';
 import '../../domain/models/texto_liturgico.dart';
+import '../widgets/font_settings_sheet.dart';
 
 class TextoLiturgicoDetailScreen extends ConsumerStatefulWidget {
   final int textoId;
@@ -30,10 +32,20 @@ class _TextoLiturgicoDetailScreenState extends ConsumerState<TextoLiturgicoDetai
     super.dispose();
   }
 
+  void _showFontSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => const FontSettingsSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textosAsync = ref.watch(textosLiturgicosProvider);
     final theme = Theme.of(context);
+    final prefs = ref.watch(readingPreferencesProvider);
 
     return textosAsync.when(
       data: (textos) {
@@ -45,15 +57,17 @@ class _TextoLiturgicoDetailScreenState extends ConsumerState<TextoLiturgicoDetai
           _pageController = PageController(initialPage: _currentIndex);
         }
 
+        final baseBodySize = 18.0 * prefs.fontSizeMultiplier;
+        final baseTitleSize = 28.0 * prefs.fontSizeMultiplier;
+
         return Scaffold(
           appBar: AppBar(
             title: Text(_allTextos![_currentIndex].tipoDisplay),
+            centerTitle: true,
             actions: [
                IconButton(
                 icon: const Icon(Icons.text_fields_rounded),
-                onPressed: () {
-                  // TODO: Implementar ajuste de tamanho de fonte global se necessário
-                },
+                onPressed: () => _showFontSettings(context),
               ),
             ],
           ),
@@ -77,6 +91,7 @@ class _TextoLiturgicoDetailScreenState extends ConsumerState<TextoLiturgicoDetai
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
+                        fontSize: baseTitleSize,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -92,11 +107,13 @@ class _TextoLiturgicoDetailScreenState extends ConsumerState<TextoLiturgicoDetai
                       data: texto.conteudo,
                       styleSheet: MarkdownStyleSheet(
                         p: theme.textTheme.bodyLarge?.copyWith(
-                          fontSize: 18,
+                          fontSize: baseBodySize,
                           height: 1.6,
                         ),
                         strong: const TextStyle(fontWeight: FontWeight.bold),
                         em: const TextStyle(fontStyle: FontStyle.italic),
+                        h1: theme.textTheme.headlineMedium?.copyWith(fontSize: baseTitleSize * 0.9, fontWeight: FontWeight.bold),
+                        h2: theme.textTheme.titleLarge?.copyWith(fontSize: baseBodySize * 1.2, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
