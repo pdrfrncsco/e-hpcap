@@ -194,39 +194,14 @@ class _HinoContent extends StatelessWidget {
     final baseBodySize = 18.0 * prefs.fontSizeMultiplier;
     final baseLabelSize = 13.0 * prefs.fontSizeMultiplier;
 
+    final hasLetra = hino.letraDe != null && hino.letraDe!.trim().isNotEmpty;
+    final hasMusica = hino.musicaDe != null && hino.musicaDe!.trim().isNotEmpty;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Informações de autoria (Metadados)
-          if (hino.letraDe != null || hino.musicaDe != null)
-            Container(
-              margin: const EdgeInsets.only(bottom: 32),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (hino.letraDe?.isNotEmpty ?? false)
-                    Text('Letra: ${hino.letraDe}', 
-                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize, fontWeight: FontWeight.w600)),
-                  if (hino.musicaDe?.isNotEmpty ?? false)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text('Música: ${hino.musicaDe}', 
-                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize, fontWeight: FontWeight.w600)),
-                    ),
-                ],
-              ),
-            ),
-          
           if (estrofes.isEmpty)
             Center(
               child: Padding(
@@ -242,9 +217,38 @@ class _HinoContent extends StatelessWidget {
             )
           else
             ...estrofes.map((e) => _buildEstrofe(context, e, baseBodySize, baseLabelSize)),
+
+          // Informações de autoria (Metadados) - Movido para o final
+          if (hasLetra || hasMusica) ...[
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hasLetra)
+                    Text('Letra: ${hino.letraDe}', 
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize, fontWeight: FontWeight.w600)),
+                  if (hasMusica)
+                    Padding(
+                      padding: EdgeInsets.only(top: hasLetra ? 4 : 0),
+                      child: Text('Música: ${hino.musicaDe}', 
+                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: baseLabelSize, fontWeight: FontWeight.w600)),
+                    ),
+                ],
+              ),
+            ),
+          ],
             
-          const SizedBox(height: 40),
-          const Center(child: Icon(Icons.church_rounded, size: 24, color: Colors.grey)),
+          // const SizedBox(height: 40),
+          // const Center(child: Icon(Icons.church_rounded, size: 24, color: Colors.grey)),
         ],
       ),
     );
