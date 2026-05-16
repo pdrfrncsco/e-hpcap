@@ -193,16 +193,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Expanded(child: Divider()),
               ],
             ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _isLoading ? null : _onGoogleLogin,
-              icon: const Icon(Icons.login, size: 24),
-              label: const Text('ENTRAR COM GOOGLE'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
+            // const SizedBox(height: 16),
+            // OutlinedButton.icon(
+            //   onPressed: _isLoading ? null : _onGoogleLogin,
+            //   icon: const Icon(Icons.login, size: 24),
+            //   label: const Text('ENTRAR COM GOOGLE'),
+            //   style: OutlinedButton.styleFrom(
+            //     minimumSize: const Size.fromHeight(56),
+            //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            //   ),
+            // ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

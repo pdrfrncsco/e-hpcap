@@ -54,7 +54,7 @@ class UpdateDialog extends StatelessWidget {
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Text(
                     'Nova versão disponível!',
                     style: theme.textTheme.titleLarge?.copyWith(
