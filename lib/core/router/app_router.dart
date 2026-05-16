@@ -18,6 +18,7 @@ import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/verify_email_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../widgets/update_checker_wrapper.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -95,7 +96,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return MainNavigationScreen(navigationShell: navigationShell);
+          return UpdateCheckerWrapper(
+            child: MainNavigationScreen(navigationShell: navigationShell),
+          );
         },
         branches: [
           StatefulShellBranch(
