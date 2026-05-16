@@ -18,24 +18,36 @@ class Auth extends _$Auth {
   }
 
   Future<void> signInWithGoogle() async {
-    if (kIsWeb) {
-      GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      await _firebaseAuth.signInWithPopup(googleProvider);
-      return;
+    try {
+      if (kIsWeb) {
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        await _firebaseAuth.signInWithPopup(googleProvider);
+        return;
+      }
+
+      // No Android, o serverClientId é opcional mas recomendado para garantir o ID Token correto
+      // No iOS/macOS, o clientId é obrigatório se não estiver no Info.plist
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // Usuário cancelou o login
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await _firebaseAuth.signInWithCredential(credential);
+    } catch (e) {
+      debugPrint("Erro detalhado Google Sign-In: $e");
+      rethrow;
     }
-
-    final GoogleSignIn googleSignIn = GoogleSignIn();
-    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-
-    if (googleUser == null) return; // Usuário cancelou o login
-
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    await _firebaseAuth.signInWithCredential(credential);
   }
 
   Future<void> signInWithEmail(String email, String password) async {
